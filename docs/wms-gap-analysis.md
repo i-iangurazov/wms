@@ -1077,3 +1077,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: unavailable WMS navigation is hidden by role; direct unauthorized WMS page access shows Russian access-denied copy: `Недостаточно прав`, `У вас нет доступа к этому действию`, `Обратитесь к администратору`.
 - Architecture review: backend/service checks remain authoritative; UI hiding is only a convenience layer. `WAREHOUSE_WORKER` can execute receiving, put-away, transfers, cycle counts, picking, and packing, but cannot adjust stock, approve count corrections, manage users, create warehouses, edit locations, or change settings. `VIEWER` remains read-only.
 - Remaining risk: this is not yet full browser E2E authorization coverage, and API route-level tests still need to cover every route handler in addition to service-layer permission tests.
+
+#### Phase 27: Production Blueprint Rewrite And Reservation Data Model
+
+- Status: blueprint hardened and first allocation prerequisite added.
+- What changed: replaced `docs/wms-production-blueprint.md` with a control document covering executive scope, product principles, reference alignment, domain objects, stock rules, RBAC, navigation, workflows, service architecture, frontend UX, production readiness, test blueprint, acceptance gates, and autonomous roadmap. Added additive `InventoryReservationStatus` and `InventoryReservation` schema with migration `20260522062000_inventory_reservations`.
+- Validation: `pnpm prisma:generate` and `pnpm exec prisma migrate deploy` passed before the full validation run.
+- UX review: no UI flow changed in this phase; the blueprint now makes Russian worker UX acceptance criteria explicit.
+- Architecture review: reservation/allocation is now represented in the database but is not wired into stock-state reservation or picking. No existing stock behavior was changed.
+- Remaining risk: the reservation service, reserve/release stock transitions, allocation-driven pick work, short-pick resolution, API tests, and E2E tests remain gaps.

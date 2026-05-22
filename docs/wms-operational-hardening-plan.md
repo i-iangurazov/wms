@@ -552,6 +552,11 @@ Status:
 - Validation: allocation tests and build.
 - Continue when: reserved quantities prevent double allocation.
 
+Status:
+- Started in this pass.
+- Added the additive `InventoryReservation` schema and reservation statuses as the first prerequisite.
+- Remaining hardening: reservation service, stock-state reservedQty updates, idempotent reserve/release commands, split-bin allocation, release on cancel, allocation-driven pick work, and tests.
+
 ### Phase F1: Picking From Allocation
 
 - Goal: pick multi-line/split-bin orders safely.
