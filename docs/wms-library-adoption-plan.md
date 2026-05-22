@@ -105,4 +105,12 @@ Passed in this adoption phase:
 
 ## Current Status
 
-`PARTIAL`: the foundation is real, active, and validated, but full WMS product hardening requires continuing the migration across every operational workflow form and scanner flow.
+`PARTIAL`: the foundation is real, active, and validated, and `package.json` now matches the libraries used in code. Full WMS product hardening still requires continuing the migration across every operational workflow form and scanner flow.
+
+Repository consistency check:
+
+- `pnpm install` reports the lockfile is up to date.
+- Runtime dependencies include Radix, lucide, React Hook Form, Zod, TanStack Query/Table, Sonner, date-fns, Papaparse/XLSX/ExcelJS, ZXing, bwip-js, and Pino.
+- Dev dependencies include Playwright.
+- Navigation uses lucide React icon components, not string letter placeholders.
+- `EmptyState` supports `icon`, `title`, `description`, `action`, `variant`, and WMS icon presets.

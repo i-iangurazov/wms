@@ -136,8 +136,9 @@ export default function ProductsPage() {
         method: editingProductId ? "PUT" : "POST",
         body: JSON.stringify(values)
       }),
-    onSuccess: async () => {
+    onSuccess: async (_payload, values) => {
       toast.success(editingProductId ? "Товар обновлён." : "Товар создан.");
+      setSearch(values.sku);
       setEditingProductId(null);
       productForm.reset(emptyProductForm);
       await queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -481,7 +482,7 @@ export default function ProductsPage() {
       ) : null}
 
       {filteredProducts.length > 0 ? (
-        <DataTable data={filteredProducts} columns={columns} getRowId={(row) => row.id} />
+        <DataTable data={filteredProducts} columns={columns} getRowId={(row) => row.id} pageSize={100} />
       ) : null}
     </div>
   );

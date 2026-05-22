@@ -76,4 +76,21 @@ describe("WMS UI design contracts", () => {
       );
     }
   });
+
+  it("keeps workflow navigation on real icon components instead of letter placeholders", () => {
+    const source = readPage("src/components/NavItem.tsx");
+    expect(source).toContain("lucide-react");
+    expect(source).toContain("type LucideIcon");
+    expect(source).not.toContain("label[0]");
+    expect(source).not.toContain("icon: string");
+  });
+
+  it("keeps EmptyState capable of meaningful icons, descriptions, actions, and variants", () => {
+    const source = readPage("src/components/EmptyState.tsx");
+    expect(source).toContain("icon?: LucideIcon");
+    expect(source).toContain("description?: string");
+    expect(source).toContain("action?: React.ReactNode");
+    expect(source).toContain("variant?: keyof typeof variants");
+    expect(source).toContain("wmsEmptyStateIcons");
+  });
 });

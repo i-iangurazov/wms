@@ -1257,3 +1257,11 @@ The phases below are intentionally small. Split any phase further if implementat
 - Architecture review: scanner/label tooling does not mutate stock. Product template generation is permission protected. Pino is system logging only and remains separate from audit logs.
 - Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
 - Remaining risk: camera scanning needs real-device warehouse testing; browser print is an MVP label strategy, not a guaranteed calibrated PDF label system.
+
+#### Phase 47: Repository Consistency Check
+
+- Status: implemented; full validation pending in this phase report.
+- What changed: ran `pnpm install` and confirmed `package.json`/lockfile already list the libraries used by code and claimed by docs. Verified navigation uses lucide React components instead of string placeholders. Tightened `EmptyState` to support `description`, `action`, semantic variants, and exported WMS-specific icon presets while preserving existing `body` callers. Added UI design contract tests for real nav icons and the stronger empty-state API.
+- UX review: no fake navigation letter icons are present in active nav code; empty states can use meaningful workflow icons and clearer descriptions.
+- Architecture review: consistency-only change; no stock, permission, auth, tenant, or ledger behavior changed.
+- Remaining risk: several active pages still use the default empty-state icon instead of a page-specific preset and should be improved during continued UI hardening.

@@ -182,7 +182,7 @@ export default function WarehousesPage() {
       ) : null}
 
       {warehouses.length > 0 ? (
-        <DataTable data={warehouses} columns={columns} getRowId={(row) => row.id} />
+        <DataTable data={warehouses} columns={columns} getRowId={(row) => row.id} pageSize={100} />
       ) : null}
     </div>
   );
