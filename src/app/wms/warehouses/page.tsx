@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
 type Warehouse = {
@@ -95,6 +96,53 @@ export default function WarehousesPage() {
     }
   }
 
+  const columns: ColumnDef<Warehouse, unknown>[] = [
+    {
+      id: "code",
+      header: commonText.code,
+      cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+      meta: { minWidth: "130px" }
+    },
+    {
+      id: "name",
+      header: commonText.name,
+      cell: ({ row }) => row.original.name,
+      meta: { minWidth: "220px" }
+    },
+    {
+      id: "locations",
+      header: "Ячейки",
+      cell: ({ row }) => <span className="tabular-nums">{row.original._count?.locations ?? 0}</span>,
+      meta: { minWidth: "100px" }
+    },
+    {
+      id: "status",
+      header: commonText.status,
+      cell: ({ row }) => <StatusBadge value={row.original.status} />,
+      meta: { minWidth: "130px" }
+    },
+    {
+      id: "actions",
+      header: commonText.actions,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <button className={ghostButtonClass} type="button" onClick={() => startEdit(row.original)}>
+            {commonText.edit}
+          </button>
+          <button
+            className={dangerButtonClass}
+            disabled={row.original.status === "INACTIVE"}
+            type="button"
+            onClick={() => void deactivateWarehouse(row.original.id)}
+          >
+            {commonText.deactivate}
+          </button>
+        </div>
+      ),
+      meta: { align: "right", minWidth: "240px" }
+    }
+  ];
+
   return (
     <div>
       <PageHeader
@@ -152,44 +200,7 @@ export default function WarehousesPage() {
       ) : null}
 
       {warehouses.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">{commonText.code}</th>
-                <th className="px-4 py-3">{commonText.name}</th>
-                <th className="px-4 py-3">Ячейки</th>
-                <th className="px-4 py-3">{commonText.status}</th>
-                <th className="px-4 py-3 text-right">{commonText.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {warehouses.map((warehouse) => (
-                <tr key={warehouse.id} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium">{warehouse.code}</td>
-                  <td className="px-4 py-3">{warehouse.name}</td>
-                  <td className="px-4 py-3">{warehouse._count?.locations ?? 0}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge value={warehouse.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className={ghostButtonClass} type="button" onClick={() => startEdit(warehouse)}>
-                      {commonText.edit}
-                    </button>
-                    <button
-                      className={dangerButtonClass}
-                      disabled={warehouse.status === "INACTIVE"}
-                      type="button"
-                      onClick={() => void deactivateWarehouse(warehouse.id)}
-                    >
-                      {commonText.deactivate}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={warehouses} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

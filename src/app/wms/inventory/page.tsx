@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
+import { cardClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
 
 type Balance = {
@@ -48,6 +49,74 @@ export default function InventoryPage() {
       return matchesQuery && matchesStock;
     });
   }, [balances, search, stockFilter]);
+
+  const columns = useMemo<ColumnDef<Balance, unknown>[]>(
+    () => [
+      {
+        id: "warehouse",
+        header: commonText.warehouse,
+        cell: ({ row }) => row.original.warehouse.code,
+        meta: { minWidth: "120px" }
+      },
+      {
+        id: "location",
+        header: commonText.location,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.location.code}</div>
+            <div className="mt-1 text-xs text-muted">{labelFor(locationTypeLabels, row.original.location.type)}</div>
+          </div>
+        ),
+        meta: { minWidth: "150px" }
+      },
+      {
+        id: "product",
+        header: commonText.product,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.product.sku}</div>
+            <div className="mt-1 max-w-xs text-xs leading-5 text-muted">{row.original.product.name}</div>
+          </div>
+        ),
+        meta: { minWidth: "220px" }
+      },
+      {
+        id: "variant",
+        header: "Вариант",
+        cell: ({ row }) => row.original.variant?.sku ?? commonText.baseProduct,
+        meta: { minWidth: "140px" }
+      },
+      {
+        id: "onHand",
+        header: "В наличии",
+        cell: ({ row }) => <span className="font-semibold tabular-nums">{row.original.onHandQty}</span>,
+        meta: { align: "right", minWidth: "110px" }
+      },
+      {
+        id: "available",
+        header: "Доступно",
+        cell: ({ row }) => <span className="font-semibold tabular-nums text-emerald-700">{row.original.availableQty}</span>,
+        meta: { align: "right", minWidth: "110px" }
+      },
+      {
+        id: "unavailable",
+        header: "Недоступно",
+        cell: ({ row }) => (
+          <div>
+            <div className="font-semibold tabular-nums text-muted">{row.original.unavailableQty}</div>
+            {row.original.unavailableQty > 0 ? (
+              <div className="mt-1 text-xs leading-5 text-muted">
+                Резерв: {row.original.reservedQty} · Собрано: {row.original.pickedQty} · Повреждено:{" "}
+                {row.original.damagedQty} · Блок: {row.original.blockedQty}
+              </div>
+            ) : null}
+          </div>
+        ),
+        meta: { align: "right", minWidth: "230px" }
+      }
+    ],
+    []
+  );
 
   useEffect(() => {
     async function loadBalances() {
@@ -97,48 +166,7 @@ export default function InventoryPage() {
         <EmptyState title="Остатки не найдены" body="Попробуйте изменить поиск или фильтр." />
       ) : null}
       {filteredBalances.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">{commonText.warehouse}</th>
-                <th className="px-4 py-3">{commonText.location}</th>
-                <th className="px-4 py-3">{commonText.product}</th>
-                <th className="px-4 py-3">Вариант</th>
-                <th className="px-4 py-3 text-right">В наличии</th>
-                <th className="px-4 py-3 text-right">Доступно</th>
-                <th className="px-4 py-3 text-right">Недоступно</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBalances.map((balance) => (
-                <tr key={balance.id} className="border-t border-border">
-                  <td className="px-4 py-3">{balance.warehouse.code}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{balance.location.code}</div>
-                    <div className="text-xs text-muted">{labelFor(locationTypeLabels, balance.location.type)}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{balance.product.sku}</div>
-                    <div className="text-xs text-muted">{balance.product.name}</div>
-                  </td>
-                  <td className="px-4 py-3">{balance.variant?.sku ?? commonText.baseProduct}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{balance.onHandQty}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-700">{balance.availableQty}</td>
-                  <td className="px-4 py-3 text-right text-muted">
-                    <div className="font-semibold">{balance.unavailableQty}</div>
-                    {balance.unavailableQty > 0 ? (
-                      <div className="text-xs">
-                        Резерв: {balance.reservedQty} · Собрано: {balance.pickedQty} · Повреждено: {balance.damagedQty} ·
-                        Блок: {balance.blockedQty}
-                      </div>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={filteredBalances} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

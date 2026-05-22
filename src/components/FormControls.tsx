@@ -40,5 +40,3 @@ export const dangerButtonClass =
   "focus-ring inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-danger shadow-sm transition hover:bg-red-50 active:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60";
 
 export const cardClass = "rounded-lg border border-border bg-panel p-5 shadow-sm";
-
-export const tableWrapClass = "overflow-x-auto rounded-lg border border-border bg-panel shadow-sm";

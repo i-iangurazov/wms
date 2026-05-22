@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
 
 type Warehouse = {
@@ -239,6 +240,78 @@ export default function LocationsPage() {
     }
   }
 
+  const columns: ColumnDef<Location, unknown>[] = [
+    {
+      id: "warehouse",
+      header: commonText.warehouse,
+      cell: ({ row }) => row.original.warehouse.code,
+      meta: { minWidth: "120px" }
+    },
+    {
+      id: "zone",
+      header: "Зона",
+      cell: ({ row }) => row.original.zone ? `${row.original.zone.code} · ${row.original.zone.name}` : "Без зоны",
+      meta: { minWidth: "170px" }
+    },
+    {
+      id: "code",
+      header: commonText.code,
+      cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
+      meta: { minWidth: "130px" }
+    },
+    {
+      id: "barcode",
+      header: commonText.barcode,
+      cell: ({ row }) => row.original.barcode ?? "-",
+      meta: { minWidth: "150px" }
+    },
+    {
+      id: "type",
+      header: commonText.type,
+      cell: ({ row }) => labelFor(locationTypeLabels, row.original.type),
+      meta: { minWidth: "140px" }
+    },
+    {
+      id: "purpose",
+      header: "Назначение",
+      cell: ({ row }) =>
+        [
+          row.original.isPickable ? "Сборка" : null,
+          row.original.isReceivable ? "Приёмка" : null,
+          row.original.isSellable ? "Продажа" : null
+        ]
+          .filter(Boolean)
+          .join(", ") || commonText.none,
+      meta: { minWidth: "170px" }
+    },
+    {
+      id: "status",
+      header: commonText.status,
+      cell: ({ row }) => <StatusBadge value={row.original.status} />,
+      meta: { minWidth: "130px" }
+    },
+    {
+      id: "actions",
+      header: commonText.actions,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <button className={ghostButtonClass} type="button" onClick={() => startEdit(row.original)}>
+            {commonText.edit}
+          </button>
+          <button
+            className={dangerButtonClass}
+            disabled={row.original.status === "INACTIVE"}
+            type="button"
+            onClick={() => void deactivateLocation(row.original.id)}
+          >
+            {commonText.deactivate}
+          </button>
+        </div>
+      ),
+      meta: { align: "right", minWidth: "220px" }
+    }
+  ];
+
   return (
     <div>
       <PageHeader
@@ -398,58 +471,7 @@ export default function LocationsPage() {
       ) : null}
 
       {locations.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">{commonText.warehouse}</th>
-                <th className="px-4 py-3">Зона</th>
-                <th className="px-4 py-3">{commonText.code}</th>
-                <th className="px-4 py-3">{commonText.barcode}</th>
-                <th className="px-4 py-3">{commonText.type}</th>
-                <th className="px-4 py-3">Назначение</th>
-                <th className="px-4 py-3">{commonText.status}</th>
-                <th className="px-4 py-3 text-right">{commonText.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {locations.map((location) => (
-                <tr key={location.id} className="border-t border-border">
-                  <td className="px-4 py-3">{location.warehouse.code}</td>
-                  <td className="px-4 py-3">{location.zone ? `${location.zone.code} · ${location.zone.name}` : "Без зоны"}</td>
-                  <td className="px-4 py-3 font-medium">{location.code}</td>
-                  <td className="px-4 py-3">{location.barcode ?? "-"}</td>
-                  <td className="px-4 py-3">{labelFor(locationTypeLabels, location.type)}</td>
-                  <td className="px-4 py-3 text-xs text-muted">
-                    {[
-                      location.isPickable ? "Сборка" : null,
-                      location.isReceivable ? "Приёмка" : null,
-                      location.isSellable ? "Продажа" : null
-                    ]
-                      .filter(Boolean)
-                      .join(", ") || commonText.none}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge value={location.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button className={ghostButtonClass} type="button" onClick={() => startEdit(location)}>
-                      {commonText.edit}
-                    </button>
-                    <button
-                      className={dangerButtonClass}
-                      disabled={location.status === "INACTIVE"}
-                      type="button"
-                      onClick={() => void deactivateLocation(location.id)}
-                    >
-                      {commonText.deactivate}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={locations} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

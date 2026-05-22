@@ -55,6 +55,14 @@ describe("WMS UI design contracts", () => {
     }
   });
 
+  it("keeps active pages on the shared data table surface", () => {
+    for (const page of activePageFiles) {
+      const source = readPage(page);
+      expect(source, `${page} must not render raw page-local tables`).not.toContain("<table");
+      expect(source, `${page} must not import the legacy table wrapper class`).not.toContain("tableWrapClass");
+    }
+  });
+
   it("uses shared feedback states for page-local loading and error states", () => {
     const pagesWithClientLoading = activePageFiles.filter((page) => {
       const source = readPage(page);

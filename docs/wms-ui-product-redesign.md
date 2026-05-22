@@ -30,7 +30,7 @@ Adopt these libraries because they directly address current gaps:
 | `@radix-ui/react-popover` | Scanner help, date/filter popovers, contextual explanations. | INSTALLED |
 | `react-hook-form` | Predictable form state and field-level validation. | INSTALLED / NOT YET MIGRATED |
 | `zod` | Shared validation schemas and Russian error messages. | INSTALLED / NOT YET MIGRATED |
-| `@tanstack/react-table` | Real data table foundation for stock, movements, audit, products. | INSTALLED / NOT YET MIGRATED |
+| `@tanstack/react-table` | Real data table foundation for stock, movements, audit, products, settings, and worker line tables. | INSTALLED / IN USE |
 | `sonner` | Consistent Russian toast feedback. | INSTALLED / NOT YET MIGRATED |
 | `date-fns` | Date formatting for movements, audit, dashboard. | INSTALLED / NOT YET MIGRATED |
 | `papaparse` / `xlsx` | Real product import parsing beyond pasted CSV text. | INSTALLED / NOT YET MIGRATED |
@@ -48,7 +48,7 @@ Required components:
 - `Textarea`: same rhythm as input.
 - `Badge`: semantic variants only.
 - `Card`: header/body/footer friendly surface.
-- `Table`: wrapper and table primitives, later TanStack-backed data tables.
+- `Table` / `DataTable`: wrapper primitives plus TanStack-backed data table surface for active pages.
 - `Dialog`: Radix Dialog for modals and confirmations.
 - `Dropdown`: Radix menu for row actions.
 - `Tabs`: Radix Tabs for large settings/admin pages.
@@ -151,14 +151,17 @@ Form plan:
 
 ## 8. Table Redesign Plan
 
-Current tables are readable but still not product-grade.
+Current tables are now consistent but still need mobile-specific treatment in the densest worker flows.
 
 Plan:
 
-- Create shared table primitives now.
-- Introduce TanStack tables for stock, movement history, audit, products.
-- Add column alignment, empty states, responsive overflow, row actions.
+- Use shared table primitives and the TanStack-backed `DataTable`.
+- Keep column alignment, responsive overflow, min widths, readable row height, and restrained hover state consistent.
+- Keep empty states outside the table with the shared `EmptyState`.
 - Avoid cramped row action buttons; use dropdown menus where appropriate.
+- Next: add mobile card fallbacks for dense receiving/cycle count line tables.
+
+Current status: active WMS pages no longer render page-local raw `<table>` markup. The only table markup lives inside `src/components/ui/Table.tsx` and is consumed through `DataTable`.
 
 ## 9. Worker Scanner Flow Redesign Plan
 
@@ -225,9 +228,9 @@ Current limitation: the operational E2E uses API setup/execution for parts of re
 ### UI-R3: Active Page Component Migration
 
 - Replace native selects in active WMS pages with shared `Select`.
-- Replace custom tables with shared `Table`.
+- Replace custom tables with shared `DataTable`.
 - Replace page-specific actions with `Button`, `Dropdown`, `Dialog`.
-- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`; table/action/modal migration remains open.
+- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`, and active page tables have been migrated to the shared TanStack `DataTable`; action/menu/modal migration remains open.
 
 ### UI-R4: Worker Workflow Redesign
 

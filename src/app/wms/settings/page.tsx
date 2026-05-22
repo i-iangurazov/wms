@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, dangerButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 
 type SettingsOverview = {
   organization: {
@@ -411,6 +412,41 @@ export default function SettingsPage() {
       (location) => location.status === "ACTIVE" && location.warehouseId === directiveForm.warehouseId
     ) ?? [];
   const directiveUsesZone = zoneDirectiveTypes.has(directiveForm.type);
+  const userColumns: ColumnDef<StoreUserRow, unknown>[] = [
+    {
+      id: "user",
+      header: "Сотрудник",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.user.name}</div>
+          <div className="mt-1 text-xs text-muted">{row.original.user.email}</div>
+        </div>
+      ),
+      meta: { minWidth: "260px" }
+    },
+    {
+      id: "role",
+      header: "Роль",
+      cell: ({ row }) => (
+        <Select
+          value={row.original.role}
+          onValueChange={(role) => updateRole(row.original.id, role)}
+          options={roleOptions.map(([role, label]) => ({ value: role, label }))}
+        />
+      ),
+      meta: { minWidth: "240px" }
+    },
+    {
+      id: "actions",
+      header: "Действия",
+      cell: ({ row }) => (
+        <button className={secondaryButtonClass} type="button" onClick={() => removeUser(row.original.id)}>
+          Удалить доступ
+        </button>
+      ),
+      meta: { align: "right", minWidth: "170px" }
+    }
+  ];
 
   return (
     <div>
@@ -781,39 +817,7 @@ export default function SettingsPage() {
                 </button>
               </form>
 
-              <div className={`mt-4 ${tableWrapClass}`}>
-                <table className="w-full border-collapse text-left text-sm">
-                  <thead className="bg-surface text-xs uppercase text-muted">
-                    <tr>
-                      <th className="px-4 py-3">Сотрудник</th>
-                      <th className="px-4 py-3">Роль</th>
-                      <th className="px-4 py-3 text-right">Действия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {users.map((row) => (
-                      <tr key={row.id} className="border-t border-border">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{row.user.name}</div>
-                          <div className="text-xs text-muted">{row.user.email}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Select
-                            value={row.role}
-                            onValueChange={(role) => updateRole(row.id, role)}
-                            options={roleOptions.map(([role, label]) => ({ value: role, label }))}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button className={secondaryButtonClass} type="button" onClick={() => removeUser(row.id)}>
-                            Удалить доступ
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable className="mt-4" data={users} columns={userColumns} getRowId={(row) => row.id} />
             </section>
           ) : null}
         </div>

@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, dangerButtonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
@@ -174,6 +175,101 @@ export default function ProductsPage() {
     setMessage(`Импортировано: товаров ${payload.productsCreated ?? 0}, вариантов ${payload.variantsCreated ?? 0}.`);
     await loadProducts();
   }
+
+  const columns: ColumnDef<Product, unknown>[] = [
+    {
+      id: "sku",
+      header: "SKU",
+      cell: ({ row }) => <span className="font-semibold">{row.original.sku}</span>,
+      meta: { minWidth: "150px" }
+    },
+    {
+      id: "name",
+      header: commonText.name,
+      cell: ({ row }) => row.original.name,
+      meta: { minWidth: "220px" }
+    },
+    {
+      id: "barcode",
+      header: commonText.barcode,
+      cell: ({ row }) => row.original.barcode ?? commonText.none,
+      meta: { minWidth: "170px" }
+    },
+    {
+      id: "variants",
+      header: "Варианты",
+      cell: ({ row }) =>
+        row.original.variants.length === 0 ? (
+          <span className="text-muted">Нет вариантов</span>
+        ) : (
+          <div className="space-y-2">
+            {row.original.variants.map((variant) => (
+              <div key={variant.id} className="rounded-lg border border-border bg-surface p-3">
+                <div className="font-medium">{variant.sku}</div>
+                <div className="mt-1 text-xs leading-5 text-muted">
+                  {variant.name} · {variant.barcode ?? "без штрихкода"}
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className={dangerButtonClass}
+                    type="button"
+                    onClick={() =>
+                      setVariantForm({
+                        id: variant.id,
+                        productId: row.original.id,
+                        sku: variant.sku,
+                        name: variant.name,
+                        barcode: variant.barcode ?? ""
+                      })
+                    }
+                  >
+                    {commonText.edit}
+                  </button>
+                  <button
+                    className={secondaryButtonClass}
+                    type="button"
+                    onClick={() => void deactivate(`/api/product-variants/${variant.id}`, "Вариант сделан недоступным.")}
+                  >
+                    {commonText.deactivate}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ),
+      meta: { minWidth: "300px" }
+    },
+    {
+      id: "actions",
+      header: commonText.actions,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            className={dangerButtonClass}
+            type="button"
+            onClick={() =>
+              setProductForm({
+                id: row.original.id,
+                sku: row.original.sku,
+                name: row.original.name,
+                barcode: row.original.barcode ?? ""
+              })
+            }
+          >
+            {commonText.edit}
+          </button>
+          <button
+            className={secondaryButtonClass}
+            type="button"
+            onClick={() => void deactivate(`/api/products/${row.original.id}`, "Товар сделан недоступным.")}
+          >
+            {commonText.deactivate}
+          </button>
+        </div>
+      ),
+      meta: { align: "right", minWidth: "210px" }
+    }
+  ];
 
   return (
     <div>
@@ -348,95 +444,7 @@ export default function ProductsPage() {
       ) : null}
 
       {filteredProducts.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">SKU</th>
-                <th className="px-4 py-3">{commonText.name}</th>
-                <th className="px-4 py-3">{commonText.barcode}</th>
-                <th className="px-4 py-3">Варианты</th>
-                <th className="px-4 py-3 text-right">{commonText.actions}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="border-t border-border align-top">
-                  <td className="px-4 py-3 font-semibold">{product.sku}</td>
-                  <td className="px-4 py-3">{product.name}</td>
-                  <td className="px-4 py-3">{product.barcode ?? commonText.none}</td>
-                  <td className="px-4 py-3">
-                    {product.variants.length === 0 ? (
-                      <span className="text-muted">Нет вариантов</span>
-                    ) : (
-                      <div className="space-y-2">
-                        {product.variants.map((variant) => (
-                          <div key={variant.id} className="rounded-md bg-surface p-2">
-                            <div className="font-medium">{variant.sku}</div>
-                            <div className="text-xs text-muted">
-                              {variant.name} · {variant.barcode ?? "без штрихкода"}
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              <button
-                                className={dangerButtonClass}
-                                type="button"
-                                onClick={() =>
-                                  setVariantForm({
-                                    id: variant.id,
-                                    productId: product.id,
-                                    sku: variant.sku,
-                                    name: variant.name,
-                                    barcode: variant.barcode ?? ""
-                                  })
-                                }
-                              >
-                                {commonText.edit}
-                              </button>
-                              <button
-                                className={secondaryButtonClass}
-                                type="button"
-                                onClick={() =>
-                                  void deactivate(`/api/product-variants/${variant.id}`, "Вариант сделан недоступным.")
-                                }
-                              >
-                                {commonText.deactivate}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <button
-                        className={dangerButtonClass}
-                        type="button"
-                        onClick={() =>
-                          setProductForm({
-                            id: product.id,
-                            sku: product.sku,
-                            name: product.name,
-                            barcode: product.barcode ?? ""
-                          })
-                        }
-                      >
-                        {commonText.edit}
-                      </button>
-                      <button
-                        className={secondaryButtonClass}
-                        type="button"
-                        onClick={() => void deactivate(`/api/products/${product.id}`, "Товар сделан недоступным.")}
-                      >
-                        {commonText.deactivate}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={filteredProducts} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

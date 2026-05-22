@@ -4,7 +4,7 @@ This audit is based on the current standalone WMS code in `src/app/wms` and shar
 
 ## Summary
 
-The UI foundation is improving but is not complete. The repo now has product-grade dependencies (`lucide-react`, Radix primitives, TanStack Table, React Hook Form, Zod, Sonner, date-fns, Papaparse/XLSX, Playwright), real navigation icons, an icon-based empty state, a Radix Select primitive, and a first Playwright E2E harness. Remaining blockers are page-by-page replacement of native selects, dense operational/admin screens, sticky mobile action areas, and full click-through scanner workflow E2E.
+The UI foundation is improving but is not complete. The repo now has product-grade dependencies (`lucide-react`, Radix primitives, TanStack Table, React Hook Form, Zod, Sonner, date-fns, Papaparse/XLSX, Playwright), real navigation icons, an icon-based empty state, a Radix Select primitive, a shared TanStack-backed `DataTable`, and a first Playwright E2E harness. Remaining blockers are dense operational/admin screens, sticky mobile action areas, row-action/menu polish, and full click-through scanner workflow E2E.
 
 ## Shared Components
 
@@ -12,7 +12,7 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | App shell | Letter placeholders were used as fake icons. | Feels like a scaffold and workers cannot orient quickly. | Workflow-first SaaS navigation with real icons, active/hover states, role visibility. | Use `lucide-react` icon map for every primary nav item. | P0 | `src/components/AppShell.tsx`, `src/components/NavItem.tsx` | IMPLEMENTED |
 | Form controls | Native selects were still present across active pages. | Native selects felt less polished than product-grade controls. | Radix Select for active forms; styled native fallback only for non-WMS legacy use. | Replace page-level native selects with shared `Select`. | P0 | `src/components/FormControls.tsx`, `src/components/ui/Select.tsx`, WMS pages | IMPLEMENTED |
-| UI primitives | Runtime dependencies and primitives were too thin for a serious SaaS UI. | Missing primitives caused random page-local controls and inconsistent states. | Shared Button/Input/Select/Textarea/Badge/Card/Table/Dialog/Dropdown/Tabs primitives. | Adopt Radix/lucide primitives and migrate active pages over time. | P0 | `src/components/ui/*`, `package.json` | PARTIAL |
+| UI primitives | Runtime dependencies and primitives were too thin for a serious SaaS UI. | Missing primitives caused random page-local controls and inconsistent states. | Shared Button/Input/Select/Textarea/Badge/Card/DataTable/Dialog/Dropdown/Tabs primitives. | Adopt Radix/lucide/TanStack primitives and keep migrating active pages. | P0 | `src/components/ui/*`, `package.json` | PARTIAL |
 | Buttons | Only primary/secondary; inline text buttons exist on pages. | Random action styles reduce trust and clarity. | Primary/secondary/ghost/danger with consistent height and disabled state. | Extend button classes and replace worst inline page buttons. | P0 | `FormControls.tsx`, pages | PARTIAL |
 | StatusBadge | Binary green/gray only. | Does not distinguish warning/danger/progress/blocked. | Central status mapping to neutral/info/success/warning/danger/blocked/progress. | Replace logic with status visual map. | P0 | `src/components/StatusBadge.tsx` | IMPLEMENTED |
 | EmptyState | Meaningless empty circle was used. | Empty states looked unfinished and did not explain the missing work. | Icon-based empty state with title, description, action, and variants. | Use meaningful lucide icon per context. | P1 | `src/components/EmptyState.tsx` | IMPLEMENTED |
@@ -29,22 +29,22 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 | `Обзор` | Previously passive metrics made the dashboard feel like a dev scaffold. | Operational command center that answers what needs action now. | Action cards for receiving, put-away, picking, discrepancies, plus contextual metrics. | P1 | `src/app/wms/page.tsx` | PARTIAL |
 | `Задачи` | Functional task center, but card styling is custom. | Worker task center with polished cards and clear actions. | Use shared card/action/status patterns. | P0 | `src/app/wms/tasks/page.tsx` | IMPLEMENTED |
 | `Товары и остатки` | Hub is clean but plain. | Clear grouped entry points. | Use improved WorkflowHub. | P1 | `src/app/wms/stock/page.tsx` | IMPLEMENTED |
-| `Приёмка` | Large functional page; row controls are dense. | Scanner-first receiving with polished controls, clear success/error. | Continue reducing table density; Select migration is done. | P0 | `src/app/wms/receiving/page.tsx` | PARTIAL |
+| `Приёмка` | Large functional page; row controls are still dense even after shared table migration. | Scanner-first receiving with polished controls, clear success/error. | Split expected/actual receiving rows into guided subcomponents and mobile sticky actions. | P0 | `src/app/wms/receiving/page.tsx` | PARTIAL |
 | `Размещение` | Worker flow exists but page still mixes manual and generated work. | Directed put-away task screen with clear next step. | Continue task-first redesign; Select migration is done. | P0 | `src/app/wms/put-away/page.tsx` | PARTIAL |
 | `Перемещения` | Form is functional but still wizard-like rather than handheld-simple. | Clean scanner-compatible transfer wizard. | Continue worker flow polish; Select migration is done. | P0 | `src/app/wms/transfers/page.tsx` | PARTIAL |
 | `Сборка заказов` | Functional but visually busy; short-pick action is another secondary button. | Guided pick task with clear reserve/pick/short states. | Continue worker task card redesign; Select migration is done. | P0 | `src/app/wms/picking/page.tsx` | PARTIAL |
 | `Упаковка` | Good foundation but custom cards/messages. | Clear verification screen. | Continue guided verification screen redesign; Select migration is done. | P0 | `src/app/wms/packing/page.tsx` | PARTIAL |
-| `Инвентаризация` | Table is cramped; inline number inputs in table. | Count table with readable rows and clear actions. | Global table styles and input sizing. | P1 | `src/app/wms/cycle-counts/page.tsx` | PARTIAL |
+| `Инвентаризация` | Shared table is readable, but inline count inputs still make the screen dense on mobile. | Count table with readable rows and clear actions. | Replace line rows with dedicated count cards on small screens. | P1 | `src/app/wms/cycle-counts/page.tsx` | PARTIAL |
 | `Пополнение` | Operational page but cards/forms custom. | Work/rule screen with status clarity. | Shared cards, statuses, controls. | P1 | `src/app/wms/replenishment/page.tsx` | PARTIAL |
-| `Склады` / `Склады и ячейки` | Dense setup forms/tables; inline text buttons. | Admin setup with clean forms, readable tables, restrained actions. | Continue layout decomposition; Select migration is done. | P0 | `locations/page.tsx`, `warehouses/page.tsx` | PARTIAL |
-| `Товары` | Product import and forms are functional but admin-heavy. | Clean catalog admin screen with polished import errors. | Continue table/action polish; Select migration is done. | P1 | `products/page.tsx` | PARTIAL |
+| `Склады` / `Склады и ячейки` | Tables now use shared `DataTable`, but setup forms are still dense. | Admin setup with clean forms, readable tables, restrained actions. | Decompose forms into sections/tabs and migrate row actions to shared buttons/dropdowns. | P0 | `locations/page.tsx`, `warehouses/page.tsx` | PARTIAL |
+| `Товары` | Product import and forms are functional but admin-heavy; table now uses shared `DataTable`. | Clean catalog admin screen with polished import errors. | Decompose import/create/variant sections and move row actions into a calm action menu. | P1 | `products/page.tsx` | PARTIAL |
 | `Штрихкоды` | Simple registry; likely form/select issues. | Clean label registry and export panel. | Shared controls/table. | P1 | `barcodes/page.tsx` | IMPLEMENTED |
 | `Остатки` | Table can be dense; status unavailable split needs clear visual hierarchy. | Calm searchable stock table. | Global table, badges, empty/loading/error. | P1 | `inventory/page.tsx` | IMPLEMENTED |
 | `История движений` | Ledger table needs readability and consistent movement labels. | Audit-quality movement history. | Global table/status styles. | P1 | `movements/page.tsx` | IMPLEMENTED |
 | `Журнал` | Hub is clean but plain. | Control journal hub. | WorkflowHub polish. | P2 | `journal/page.tsx` | IMPLEMENTED |
 | `Журнал действий` | Audit table/list may be dense. | Readable audit log with labels. | Global table/status styles. | P1 | `audit/page.tsx` | IMPLEMENTED |
 | `Проверка остатков` | Reconciliation tables/cards custom. | Clear discrepancy review. | Global table/card styles. | P1 | `reconciliation/page.tsx` | IMPLEMENTED |
-| `Настройки` | Very large page; many forms/tables; risk of admin clutter. | Calm admin settings with consistent sections. | Split sections into tabs/cards; Select migration is done. | P0 | `settings/page.tsx` | PARTIAL |
+| `Настройки` | Very large page; user access table now uses shared `DataTable`, but the page still needs tabs and section focus. | Calm admin settings with consistent sections. | Split sections into tabs/cards and add clearer action grouping. | P0 | `settings/page.tsx` | PARTIAL |
 | `Доступ запрещён` | Copy is correct; card is basic. | Calm access-denied state. | Use shared card/button styles. | P1 | `AccessDenied.tsx` | IMPLEMENTED |
 
 ## Cross-Cutting Issues
@@ -55,7 +55,7 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 | Select arrow and padding | Native WMS selects were raw/cramped. | Shared Radix Select plus styled native fallback. | P0 | IMPLEMENTED |
 | Empty circles | Empty-state decoration looked meaningless. | Icon-based empty states with action support. | P0 | IMPLEMENTED |
 | Raw inline error/loading blocks | Inconsistent color/radius/spacing. | Add `LoadingState`, `ErrorState`; gradually replace. | P1 | IMPLEMENTED |
-| Tables | Repeated raw table classes across many pages. | Global WMS table styles plus future `DataTable`. | P0 | PARTIAL |
+| Tables | Active pages previously repeated raw `<table>` markup. | Shared TanStack-backed `DataTable` with consistent spacing, alignment, overflow, and hover state. | P0 | IMPLEMENTED |
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
 | Mobile scanner UI | Functional but not visually strong enough. | Improve scanner components first. | P0 | PARTIAL |
@@ -118,3 +118,10 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 - Acceptance: no native `<select>` tags remain in `src/app/wms` or `src/components`; active WMS screens use `src/components/ui/Select`.
 - Progress: migrated filters, worker flows, admin setup screens, settings, warehouse rules, replenishment, packing, picking, receiving, put-away, transfers, inventory, movements, audit, products, barcodes, cycle counts, adjustments, and locations.
 - Remaining gap: this removes raw select controls, but many large pages still need deeper layout/table/action redesign.
+
+### UI Phase 10: Active DataTable Migration
+
+- Status: IMPLEMENTED.
+- Acceptance: active WMS pages do not render raw page-local `<table>` markup and do not import the old `tableWrapClass`; all active table surfaces use `src/components/ui/DataTable`.
+- Progress: migrated stock, movement history, audit, warehouses, products, locations, barcode labels, reconciliation, receiving lines, cycle count lines, and settings user access to the shared TanStack-backed table surface. Added a UI contract test to prevent raw page-local tables from returning.
+- Remaining gap: this normalizes table surfaces, but dense worker rows in receiving/cycle count and large settings/product forms still need mobile-specific cards, sticky actions, and row-action menus.

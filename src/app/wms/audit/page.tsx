@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
+import { cardClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { auditActionLabels, auditEntityLabels, commonText, emptyStates, labelFor } from "@/lib/wmsText";
 
 type AuditLog = {
@@ -53,6 +54,52 @@ export default function AuditPage() {
     });
   }, [actionFilter, logs, search]);
 
+  const columns = useMemo<ColumnDef<AuditLog, unknown>[]>(
+    () => [
+      {
+        id: "createdAt",
+        header: "Время",
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+        meta: { minWidth: "180px" }
+      },
+      {
+        id: "action",
+        header: "Действие",
+        cell: ({ row }) => <span className="font-medium">{labelFor(auditActionLabels, row.original.action)}</span>,
+        meta: { minWidth: "190px" }
+      },
+      {
+        id: "entity",
+        header: "Объект",
+        cell: ({ row }) => (
+          <div>
+            <div>{labelFor(auditEntityLabels, row.original.entityType)}</div>
+            <div className="mt-1 max-w-[220px] truncate text-xs text-muted">{row.original.entityId}</div>
+          </div>
+        ),
+        meta: { minWidth: "220px" }
+      },
+      {
+        id: "details",
+        header: "Детали",
+        cell: ({ row }) => metadataSummary(row.original.metadata) || commonText.none,
+        meta: { minWidth: "190px" }
+      },
+      {
+        id: "user",
+        header: "Сотрудник",
+        cell: ({ row }) => (
+          <div>
+            <div>{row.original.user.name}</div>
+            <div className="mt-1 text-xs text-muted">{row.original.user.email}</div>
+          </div>
+        ),
+        meta: { minWidth: "220px" }
+      }
+    ],
+    []
+  );
+
   useEffect(() => {
     async function loadLogs() {
       const response = await fetch("/api/audit-logs", { cache: "no-store" });
@@ -98,36 +145,7 @@ export default function AuditPage() {
         <EmptyState title="Действия не найдены" body="Попробуйте изменить поиск или фильтр." />
       ) : null}
       {filteredLogs.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">Время</th>
-                <th className="px-4 py-3">Действие</th>
-                <th className="px-4 py-3">Объект</th>
-                <th className="px-4 py-3">Детали</th>
-                <th className="px-4 py-3">Сотрудник</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="border-t border-border">
-                  <td className="px-4 py-3">{new Date(log.createdAt).toLocaleString()}</td>
-                  <td className="px-4 py-3 font-medium">{labelFor(auditActionLabels, log.action)}</td>
-                  <td className="px-4 py-3">
-                    <div>{labelFor(auditEntityLabels, log.entityType)}</div>
-                    <div className="text-xs text-muted">{log.entityId}</div>
-                  </td>
-                  <td className="px-4 py-3">{metadataSummary(log.metadata) || commonText.none}</td>
-                  <td className="px-4 py-3">
-                    <div>{log.user.name}</div>
-                    <div className="text-xs text-muted">{log.user.email}</div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={filteredLogs} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

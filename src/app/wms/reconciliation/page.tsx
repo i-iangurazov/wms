@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { cardClass, tableWrapClass } from "@/components/FormControls";
+import { cardClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { DataTable } from "@/components/ui";
 
 type StockState = {
   onHandQty: number;
@@ -38,6 +40,38 @@ function stateSummary(state: StockState) {
 export default function ReconciliationPage() {
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const columns: ColumnDef<Discrepancy, unknown>[] = [
+    {
+      id: "location",
+      header: "Склад / ячейка",
+      cell: ({ row }) => `${row.original.warehouse.code} / ${row.original.location.code}`,
+      meta: { minWidth: "180px" }
+    },
+    {
+      id: "product",
+      header: "Товар",
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.product.sku}</div>
+          <div className="mt-1 text-xs text-muted">{row.original.variant?.sku ?? row.original.product.name}</div>
+        </div>
+      ),
+      meta: { minWidth: "240px" }
+    },
+    {
+      id: "actual",
+      header: "В остатках",
+      cell: ({ row }) => stateSummary(row.original.actual),
+      meta: { minWidth: "260px" }
+    },
+    {
+      id: "expected",
+      header: "По движениям",
+      cell: ({ row }) => stateSummary(row.original.expected),
+      meta: { minWidth: "260px" }
+    }
+  ];
 
   useEffect(() => {
     async function loadReconciliation() {
@@ -77,33 +111,7 @@ export default function ReconciliationPage() {
             </div>
           ) : null}
           {reconciliation.discrepancies.length > 0 ? (
-            <div className={tableWrapClass}>
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-surface text-xs uppercase text-muted">
-                  <tr>
-                    <th className="px-4 py-3">Склад / ячейка</th>
-                    <th className="px-4 py-3">Товар</th>
-                    <th className="px-4 py-3">В остатках</th>
-                    <th className="px-4 py-3">По движениям</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reconciliation.discrepancies.map((row) => (
-                    <tr key={row.id} className="border-t border-border">
-                      <td className="px-4 py-3">
-                        {row.warehouse.code} / {row.location.code}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{row.product.sku}</div>
-                        <div className="text-xs text-muted">{row.variant?.sku ?? row.product.name}</div>
-                      </td>
-                      <td className="px-4 py-3">{stateSummary(row.actual)}</td>
-                      <td className="px-4 py-3">{stateSummary(row.expected)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable data={reconciliation.discrepancies} columns={columns} getRowId={(row) => row.id} />
           ) : null}
         </div>
       ) : null}

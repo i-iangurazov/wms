@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 
 type LabelType = "PRODUCT" | "PRODUCT_VARIANT" | "LOCATION";
 
@@ -131,6 +132,33 @@ export default function BarcodesPage() {
     await loadData();
   }
 
+  const columns: ColumnDef<BarcodeLabel, unknown>[] = [
+    {
+      id: "code",
+      header: "Код",
+      cell: ({ row }) => <span className="font-mono text-xs font-semibold">{row.original.code}</span>,
+      meta: { minWidth: "180px" }
+    },
+    {
+      id: "type",
+      header: "Тип",
+      cell: ({ row }) => labelTypes.find((item) => item.value === row.original.type)?.label ?? row.original.type,
+      meta: { minWidth: "150px" }
+    },
+    {
+      id: "target",
+      header: "Объект",
+      cell: ({ row }) => labelTarget(row.original),
+      meta: { minWidth: "260px" }
+    },
+    {
+      id: "note",
+      header: "Примечание",
+      cell: ({ row }) => <span className="text-muted">{row.original.note ?? "Нет"}</span>,
+      meta: { minWidth: "180px" }
+    }
+  ];
+
   return (
     <div>
       <PageHeader
@@ -180,28 +208,7 @@ export default function BarcodesPage() {
       ) : labels.length === 0 ? (
         <EmptyState title="Штрихкодов пока нет" body="Добавьте первый код для товара или ячейки, чтобы упростить сканирование." />
       ) : (
-        <div className={tableWrapClass}>
-          <table className="min-w-full divide-y divide-border text-sm">
-            <thead className="bg-surface text-left text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Код</th>
-                <th className="px-4 py-3 font-medium">Тип</th>
-                <th className="px-4 py-3 font-medium">Объект</th>
-                <th className="px-4 py-3 font-medium">Примечание</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {labels.map((label) => (
-                <tr key={label.id}>
-                  <td className="px-4 py-3 font-mono text-xs">{label.code}</td>
-                  <td className="px-4 py-3">{labelTypes.find((item) => item.value === label.type)?.label ?? label.type}</td>
-                  <td className="px-4 py-3">{labelTarget(label)}</td>
-                  <td className="px-4 py-3 text-muted">{label.note ?? "Нет"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={labels} columns={columns} getRowId={(row) => row.id} />
       )}
     </div>
   );

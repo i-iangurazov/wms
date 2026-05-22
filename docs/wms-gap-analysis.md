@@ -1212,3 +1212,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: select arrows, padding, trigger height, focus states, and dropdown panels are now consistent across active WMS screens.
 - Architecture review: UI-only change; stock logic, tenant isolation, permissions, and audit behavior are unchanged.
 - Remaining risk: large forms still need better grouping/tabs and some worker screens still need true handheld step-by-step click-through redesign.
+
+#### Phase 42: Active WMS DataTable Migration
+
+- Status: implemented and validated.
+- What changed: added `src/components/ui/DataTable.tsx` using TanStack Table and migrated all active WMS page-local raw table markup to the shared `DataTable` surface. This includes stock balances, movement history, audit logs, warehouses, products, locations, barcode labels, reconciliation discrepancies, receiving lines, cycle count lines, and settings user access. Removed the unused legacy `tableWrapClass` export and added a UI contract test that blocks raw page-local `<table>` and `tableWrapClass` usage from returning. Fixed a receiving workflow bug found during the migration: receiving a line now posts to that line's session instead of the currently selected add-line session.
+- UX review: active table surfaces now share row height, header styling, alignment, responsive overflow, and hover states. This is a meaningful SaaS polish step, but the receiving and cycle-count line rows still need mobile card variants because inline controls remain dense.
+- Architecture review: stock mutation rules remain unchanged. The receiving route fix makes the UI safer without changing service boundaries; receive operations still go through the existing receiving API and stock service.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
+- Remaining risk: row actions still use page-local buttons instead of shared dropdown/action menus, and worker line tables need mobile-specific scanner cards before UI hardening can be called complete.

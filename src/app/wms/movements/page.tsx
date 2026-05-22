@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
+import { cardClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import {
   commonText,
   emptyStates,
@@ -54,6 +55,68 @@ export default function MovementsPage() {
     });
   }, [movements, search, typeFilter]);
 
+  const columns = useMemo<ColumnDef<Movement, unknown>[]>(
+    () => [
+      {
+        id: "createdAt",
+        header: "Время",
+        cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+        meta: { minWidth: "180px" }
+      },
+      {
+        id: "type",
+        header: commonText.type,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{labelFor(movementTypeLabels, row.original.type)}</div>
+            {row.original.reason ? (
+              <div className="mt-1 text-xs text-muted">{labelFor(adjustmentReasonLabels, row.original.reason)}</div>
+            ) : null}
+          </div>
+        ),
+        meta: { minWidth: "180px" }
+      },
+      {
+        id: "product",
+        header: commonText.product,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.product.sku}</div>
+            <div className="mt-1 max-w-xs text-xs leading-5 text-muted">
+              {row.original.variant?.sku ?? row.original.product.name}
+            </div>
+          </div>
+        ),
+        meta: { minWidth: "220px" }
+      },
+      {
+        id: "from",
+        header: "Откуда",
+        cell: ({ row }) => row.original.fromLocation?.code ?? "-",
+        meta: { minWidth: "120px" }
+      },
+      {
+        id: "to",
+        header: "Куда",
+        cell: ({ row }) => row.original.toLocation?.code ?? "-",
+        meta: { minWidth: "120px" }
+      },
+      {
+        id: "quantity",
+        header: "Кол-во",
+        cell: ({ row }) => <span className="font-semibold tabular-nums">{row.original.quantity}</span>,
+        meta: { align: "right", minWidth: "100px" }
+      },
+      {
+        id: "createdBy",
+        header: "Сотрудник",
+        cell: ({ row }) => row.original.createdBy.name,
+        meta: { minWidth: "160px" }
+      }
+    ],
+    []
+  );
+
   useEffect(() => {
     async function loadMovements() {
       const response = await fetch("/api/inventory/movements", { cache: "no-store" });
@@ -101,42 +164,7 @@ export default function MovementsPage() {
         <EmptyState title="Движения не найдены" body="Попробуйте изменить поиск или тип операции." />
       ) : null}
       {filteredMovements.length > 0 ? (
-        <div className={tableWrapClass}>
-          <table className="w-full border-collapse text-left text-sm">
-            <thead className="bg-surface text-xs uppercase text-muted">
-              <tr>
-                <th className="px-4 py-3">Время</th>
-                <th className="px-4 py-3">{commonText.type}</th>
-                <th className="px-4 py-3">{commonText.product}</th>
-                <th className="px-4 py-3">Откуда</th>
-                <th className="px-4 py-3">Куда</th>
-                <th className="px-4 py-3 text-right">Кол-во</th>
-                <th className="px-4 py-3">Сотрудник</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMovements.map((movement) => (
-                <tr key={movement.id} className="border-t border-border">
-                  <td className="px-4 py-3">{new Date(movement.createdAt).toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{labelFor(movementTypeLabels, movement.type)}</div>
-                    {movement.reason ? (
-                      <div className="text-xs text-muted">{labelFor(adjustmentReasonLabels, movement.reason)}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium">{movement.product.sku}</div>
-                    <div className="text-xs text-muted">{movement.variant?.sku ?? movement.product.name}</div>
-                  </td>
-                  <td className="px-4 py-3">{movement.fromLocation?.code ?? "-"}</td>
-                  <td className="px-4 py-3">{movement.toLocation?.code ?? "-"}</td>
-                  <td className="px-4 py-3 text-right font-semibold">{movement.quantity}</td>
-                  <td className="px-4 py-3">{movement.createdBy.name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable data={filteredMovements} columns={columns} getRowId={(row) => row.id} />
       ) : null}
     </div>
   );

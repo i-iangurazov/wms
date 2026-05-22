@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 import { ScanField } from "@/components/wms/ScanField";
@@ -199,13 +200,13 @@ export default function ReceivingPage() {
     }
   }
 
-  async function receiveLine(lineId: string) {
+  async function receiveLine(sessionId: string, lineId: string) {
     setError(null);
     setMessage(null);
     const quantity = receiveQtyByLine[lineId] ?? 1;
     const idempotencyKey = receiveKeysRef.current[lineId] ?? crypto.randomUUID();
     receiveKeysRef.current[lineId] = idempotencyKey;
-    const response = await fetch(`/api/receiving/sessions/${lineForm.sessionId}/receive`, {
+    const response = await fetch(`/api/receiving/sessions/${sessionId}/receive`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -243,6 +244,121 @@ export default function ReceivingPage() {
       setMessage("Приёмка завершена.");
       await loadData();
     }
+  }
+
+  function columnsForSession(session: ReceivingSession): ColumnDef<ReceivingLine, unknown>[] {
+    return [
+      {
+        id: "product",
+        header: commonText.product,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.product.sku}</div>
+            {row.original.variant ? (
+              <div className="mt-1 text-xs text-muted">{row.original.variant.sku}</div>
+            ) : null}
+          </div>
+        ),
+        meta: { minWidth: "180px" }
+      },
+      {
+        id: "expected",
+        header: "Ожидали",
+        cell: ({ row }) => <span className="tabular-nums">{row.original.expectedQty}</span>,
+        meta: { minWidth: "95px" }
+      },
+      {
+        id: "received",
+        header: "Принято",
+        cell: ({ row }) => <span className="tabular-nums">{row.original.receivedQty}</span>,
+        meta: { minWidth: "95px" }
+      },
+      {
+        id: "damaged",
+        header: "Повреждено",
+        cell: ({ row }) => <span className="tabular-nums">{row.original.damagedQty}</span>,
+        meta: { minWidth: "115px" }
+      },
+      {
+        id: "receive",
+        header: "Принять",
+        cell: ({ row }) => (
+          <div className="flex flex-col gap-2">
+            <input
+              className={`${inputClass} max-w-28`}
+              min={0}
+              type="number"
+              value={receiveQtyByLine[row.original.id] ?? 1}
+              onChange={(event) =>
+                setReceiveQtyByLine((current) => ({ ...current, [row.original.id]: Number(event.target.value) }))
+              }
+            />
+            <input
+              className={`${inputClass} max-w-28`}
+              min={0}
+              type="number"
+              value={damagedQtyByLine[row.original.id] ?? 0}
+              onChange={(event) =>
+                setDamagedQtyByLine((current) => ({ ...current, [row.original.id]: Number(event.target.value) }))
+              }
+              aria-label="Повреждено"
+            />
+          </div>
+        ),
+        meta: { minWidth: "145px" }
+      },
+      {
+        id: "exception",
+        header: "Исключение",
+        cell: ({ row }) => (
+          <div className="flex min-w-64 flex-col gap-2">
+            <label className="flex items-center gap-2 text-xs text-muted">
+              <input
+                type="checkbox"
+                checked={overReceiptByLine[row.original.id] ?? false}
+                onChange={(event) =>
+                  setOverReceiptByLine((current) => ({ ...current, [row.original.id]: event.target.checked }))
+                }
+              />
+              Разрешить сверх ожидания
+            </label>
+            <input
+              className={inputClass}
+              value={noteByLine[row.original.id] ?? ""}
+              onChange={(event) =>
+                setNoteByLine((current) => ({ ...current, [row.original.id]: event.target.value }))
+              }
+              placeholder="Причина, если есть расхождение"
+            />
+            {row.original.shortQty > 0 ? (
+              <span className="text-xs text-red-700">Недопоставка: {row.original.shortQty}</span>
+            ) : null}
+            {row.original.exceptionNote ? <span className="text-xs text-muted">{row.original.exceptionNote}</span> : null}
+          </div>
+        ),
+        meta: { minWidth: "290px" }
+      },
+      {
+        id: "actions",
+        header: commonText.actions,
+        cell: ({ row }) => (
+          <button
+            className={secondaryButtonClass}
+            disabled={
+              row.original.status === "RECEIVED" ||
+              row.original.status === "CLOSED_SHORT" ||
+              row.original.status === "OVER_RECEIVED" ||
+              session.status === "COMPLETED"
+            }
+            type="button"
+            onClick={() => void receiveLine(session.id, row.original.id)}
+          >
+            Принять
+          </button>
+        ),
+        meta: { align: "right", minWidth: "120px" }
+      }
+    ];
   }
 
   return (
@@ -367,93 +483,7 @@ export default function ReceivingPage() {
                 </button>
               </div>
             </div>
-            <div className={tableWrapClass}>
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-surface text-xs uppercase text-muted">
-                  <tr>
-                    <th className="px-3 py-2">{commonText.product}</th>
-                    <th className="px-3 py-2">Ожидали</th>
-                    <th className="px-3 py-2">Принято</th>
-                    <th className="px-3 py-2">Повреждено</th>
-                    <th className="px-3 py-2">Принять</th>
-                    <th className="px-3 py-2">Исключение</th>
-                    <th className="px-3 py-2 text-right">{commonText.actions}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {session.lines.map((line) => (
-                    <tr key={line.id} className="border-t border-border">
-                      <td className="px-3 py-2">{line.product.sku}</td>
-                      <td className="px-3 py-2">{line.expectedQty}</td>
-                      <td className="px-3 py-2">{line.receivedQty}</td>
-                      <td className="px-3 py-2">{line.damagedQty}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-col gap-2">
-                          <input
-                            className={`${inputClass} max-w-28`}
-                            min={0}
-                            type="number"
-                            value={receiveQtyByLine[line.id] ?? 1}
-                            onChange={(event) =>
-                              setReceiveQtyByLine((current) => ({ ...current, [line.id]: Number(event.target.value) }))
-                            }
-                          />
-                          <input
-                            className={`${inputClass} max-w-28`}
-                            min={0}
-                            type="number"
-                            value={damagedQtyByLine[line.id] ?? 0}
-                            onChange={(event) =>
-                              setDamagedQtyByLine((current) => ({ ...current, [line.id]: Number(event.target.value) }))
-                            }
-                            aria-label="Повреждено"
-                          />
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-col gap-2">
-                          <label className="flex items-center gap-2 text-xs text-muted">
-                            <input
-                              type="checkbox"
-                              checked={overReceiptByLine[line.id] ?? false}
-                              onChange={(event) =>
-                                setOverReceiptByLine((current) => ({ ...current, [line.id]: event.target.checked }))
-                              }
-                            />
-                            Разрешить сверх ожидания
-                          </label>
-                          <input
-                            className={inputClass}
-                            value={noteByLine[line.id] ?? ""}
-                            onChange={(event) =>
-                              setNoteByLine((current) => ({ ...current, [line.id]: event.target.value }))
-                            }
-                            placeholder="Причина, если есть расхождение"
-                          />
-                          {line.shortQty > 0 ? <span className="text-xs text-red-700">Недопоставка: {line.shortQty}</span> : null}
-                          {line.exceptionNote ? <span className="text-xs text-muted">{line.exceptionNote}</span> : null}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          className={secondaryButtonClass}
-                          disabled={
-                            line.status === "RECEIVED" ||
-                            line.status === "CLOSED_SHORT" ||
-                            line.status === "OVER_RECEIVED" ||
-                            session.status === "COMPLETED"
-                          }
-                          type="button"
-                          onClick={() => void receiveLine(line.id)}
-                        >
-                          Принять
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable data={session.lines} columns={columnsForSession(session)} getRowId={(row) => row.id} />
             {session.status !== "COMPLETED" ? (
               <div className="mt-4 rounded-md bg-surface p-3">
                 <Field label="Причина закрытия с недопоставкой">

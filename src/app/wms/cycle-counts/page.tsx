@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Select } from "@/components/ui";
+import { DataTable, Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { ScannerStepLayout } from "@/components/wms/ScannerStepLayout";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
@@ -134,6 +135,80 @@ export default function CycleCountsPage() {
     }
   }
 
+  function columnsForSession(session: CountSession): ColumnDef<CountLine, unknown>[] {
+    return [
+      {
+        id: "product",
+        header: commonText.product,
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.original.product.sku}</div>
+            {row.original.variant ? (
+              <div className="mt-1 text-xs text-muted">{row.original.variant.sku}</div>
+            ) : null}
+          </div>
+        ),
+        meta: { minWidth: "190px" }
+      },
+      {
+        id: "expected",
+        header: "Ожидали",
+        cell: ({ row }) => <span className="tabular-nums">{row.original.expectedQty}</span>,
+        meta: { minWidth: "100px" }
+      },
+      {
+        id: "counted",
+        header: "Посчитали",
+        cell: ({ row }) => (
+          <input
+            className={`${inputClass} max-w-28`}
+            min={0}
+            type="number"
+            value={counts[row.original.id] ?? row.original.countedQty ?? 0}
+            onChange={(event) =>
+              setCounts((current) => ({ ...current, [row.original.id]: Number(event.target.value) }))
+            }
+            disabled={session.status !== "COUNTING"}
+          />
+        ),
+        meta: { minWidth: "130px" }
+      },
+      {
+        id: "difference",
+        header: "Разница",
+        cell: ({ row }) => (
+          <span
+            className={`font-semibold tabular-nums ${
+              row.original.difference === 0
+                ? "text-muted"
+                : row.original.difference > 0
+                  ? "text-emerald-700"
+                  : "text-danger"
+            }`}
+          >
+            {row.original.difference}
+          </span>
+        ),
+        meta: { minWidth: "100px" }
+      },
+      {
+        id: "actions",
+        header: commonText.actions,
+        cell: ({ row }) => (
+          <button
+            className={secondaryButtonClass}
+            disabled={session.status !== "COUNTING"}
+            type="button"
+            onClick={() => void saveCount(session.id, row.original.id)}
+          >
+            {commonText.save}
+          </button>
+        ),
+        meta: { align: "right", minWidth: "130px" }
+      }
+    ];
+  }
+
   return (
     <div>
       <PageHeader
@@ -220,60 +295,7 @@ export default function CycleCountsPage() {
                 </button>
               </div>
             </div>
-            <div className={tableWrapClass}>
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-surface text-xs uppercase text-muted">
-                  <tr>
-                    <th className="px-3 py-2">{commonText.product}</th>
-                    <th className="px-3 py-2">Ожидали</th>
-                    <th className="px-3 py-2">Посчитали</th>
-                    <th className="px-3 py-2">Разница</th>
-                    <th className="px-3 py-2 text-right">{commonText.actions}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {session.lines.map((line) => (
-                    <tr key={line.id} className="border-t border-border">
-                      <td className="px-3 py-2">{line.product.sku}</td>
-                      <td className="px-3 py-2">{line.expectedQty}</td>
-                      <td className="px-3 py-2">
-                        <input
-                          className={`${inputClass} max-w-28`}
-                          min={0}
-                          type="number"
-                          value={counts[line.id] ?? line.countedQty ?? 0}
-                          onChange={(event) =>
-                            setCounts((current) => ({ ...current, [line.id]: Number(event.target.value) }))
-                          }
-                          disabled={session.status !== "COUNTING"}
-                        />
-                      </td>
-                      <td
-                        className={`px-3 py-2 font-semibold ${
-                          line.difference === 0
-                            ? "text-muted"
-                            : line.difference > 0
-                              ? "text-emerald-700"
-                              : "text-danger"
-                        }`}
-                      >
-                        {line.difference}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <button
-                          className={secondaryButtonClass}
-                          disabled={session.status !== "COUNTING"}
-                          type="button"
-                          onClick={() => void saveCount(session.id, line.id)}
-                        >
-                          {commonText.save}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable data={session.lines} columns={columnsForSession(session)} getRowId={(row) => row.id} />
           </section>
         ))}
       </div>
