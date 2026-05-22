@@ -4,13 +4,13 @@ This audit is based on the current standalone WMS code in `src/app/wms` and shar
 
 ## Summary
 
-The current UI is functionally broad but visually uneven. Most screens reuse a small component set, which is good for hardening. The main problems are weak select styling, inconsistent status badges, inconsistent page cards/forms, cramped tables, page-specific error/loading states, and worker screens that need stronger scanner/product polish.
+The UI is no longer a raw technical scaffold: active WMS screens now use shared form controls, select styling, cards, table wrappers, loading/error states, page headers, Russian status badges, and browser smoke coverage for representative desktop/mobile pages. Remaining UI gaps are density in the largest operational/admin screens, missing sticky mobile action areas, and lack of full click-through Playwright-style workflow E2E.
 
 ## Shared Components
 
 | Component | Current issue | Why it is bad | Target | Required fix | Priority | Files | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| App shell | Plain sidebar links, no icons, weak active state, mobile nav is basic chips. | Feels like a scaffold and workers cannot orient quickly. | Workflow-first SaaS navigation with icons, active/hover states, role visibility. | Add nav icon map, active state through CSS, stronger sidebar/mobile styling. | P0 | `src/components/AppShell.tsx`, `src/app/globals.css` | PARTIAL |
+| App shell | Plain sidebar links, no icons, weak active state, mobile nav is basic chips. | Feels like a scaffold and workers cannot orient quickly. | Workflow-first SaaS navigation with icons, active/hover states, role visibility. | Add nav icon map, active state through CSS, stronger sidebar/mobile styling. | P0 | `src/components/AppShell.tsx`, `src/app/globals.css` | IMPLEMENTED |
 | Form controls | `inputClass` is minimal and used for selects; select arrow can sit too close to text. | Looks like default form UI and can clip Russian values. | Polished shared control class with focus, disabled, select arrow padding. | Add `wms-control`, `selectClass`, textarea, button variants. | P0 | `src/components/FormControls.tsx`, `src/app/globals.css` | IMPLEMENTED |
 | Buttons | Only primary/secondary; inline text buttons exist on pages. | Random action styles reduce trust and clarity. | Primary/secondary/ghost/danger with consistent height and disabled state. | Extend button classes and replace worst inline page buttons. | P0 | `FormControls.tsx`, pages | PARTIAL |
 | StatusBadge | Binary green/gray only. | Does not distinguish warning/danger/progress/blocked. | Central status mapping to neutral/info/success/warning/danger/blocked/progress. | Replace logic with status visual map. | P0 | `src/components/StatusBadge.tsx` | IMPLEMENTED |
@@ -27,7 +27,7 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | --- | --- | --- | --- | --- | --- | --- |
 | `Обзор` | Metrics and panels use repeated custom cards; loading/error states are inline. | Dashboard cards with consistent card/table/list spacing. | Reuse shared card/loading/error primitives and status mapping. | P1 | `src/app/wms/page.tsx` | IMPLEMENTED |
 | `Задачи` | Functional task center, but card styling is custom. | Worker task center with polished cards and clear actions. | Use shared card/action/status patterns. | P0 | `src/app/wms/tasks/page.tsx` | IMPLEMENTED |
-| `Товары и остатки` | Hub is clean but plain. | Clear grouped entry points. | Use improved WorkflowHub. | P1 | `src/app/wms/stock/page.tsx` | TODO |
+| `Товары и остатки` | Hub is clean but plain. | Clear grouped entry points. | Use improved WorkflowHub. | P1 | `src/app/wms/stock/page.tsx` | IMPLEMENTED |
 | `Приёмка` | Large functional page; forms/cards are custom and dense. | Scanner-first receiving with polished controls, clear success/error. | Shared controls and scanner layout polish. | P0 | `src/app/wms/receiving/page.tsx` | PARTIAL |
 | `Размещение` | Worker flow exists but page feels like forms and cards bolted together. | Directed put-away task screen with clear next step. | Shared scanner/card/status styles. | P0 | `src/app/wms/put-away/page.tsx` | PARTIAL |
 | `Перемещения` | Select-heavy form; native select styling is weak. | Clean scanner-compatible transfer wizard. | Fix selects globally; polish form card. | P0 | `src/app/wms/transfers/page.tsx` | PARTIAL |
@@ -40,7 +40,7 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | `Штрихкоды` | Simple registry; likely form/select issues. | Clean label registry and export panel. | Shared controls/table. | P1 | `barcodes/page.tsx` | IMPLEMENTED |
 | `Остатки` | Table can be dense; status unavailable split needs clear visual hierarchy. | Calm searchable stock table. | Global table, badges, empty/loading/error. | P1 | `inventory/page.tsx` | IMPLEMENTED |
 | `История движений` | Ledger table needs readability and consistent movement labels. | Audit-quality movement history. | Global table/status styles. | P1 | `movements/page.tsx` | IMPLEMENTED |
-| `Журнал` | Hub is clean but plain. | Control journal hub. | WorkflowHub polish. | P2 | `journal/page.tsx` | TODO |
+| `Журнал` | Hub is clean but plain. | Control journal hub. | WorkflowHub polish. | P2 | `journal/page.tsx` | IMPLEMENTED |
 | `Журнал действий` | Audit table/list may be dense. | Readable audit log with labels. | Global table/status styles. | P1 | `audit/page.tsx` | IMPLEMENTED |
 | `Проверка остатков` | Reconciliation tables/cards custom. | Clear discrepancy review. | Global table/card styles. | P1 | `reconciliation/page.tsx` | IMPLEMENTED |
 | `Настройки` | Very large page; many forms/selects/tables; risk of admin clutter. | Calm admin settings with consistent sections. | Shared controls/table/card; later split sections if needed. | P0 | `settings/page.tsx` | PARTIAL |
@@ -51,7 +51,7 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | Issue | Why it matters | Fix | Priority | Status |
 | --- | --- | --- | --- | --- |
 | Select arrow and padding | Current selects can look raw/cramped. | Global native select styling through `.wms-control`. | P0 | IMPLEMENTED |
-| Raw inline error/loading blocks | Inconsistent color/radius/spacing. | Add `LoadingState`, `ErrorState`; gradually replace. | P1 | TODO |
+| Raw inline error/loading blocks | Inconsistent color/radius/spacing. | Add `LoadingState`, `ErrorState`; gradually replace. | P1 | IMPLEMENTED |
 | Tables | Repeated raw table classes across many pages. | Global WMS table styles plus future `DataTable`. | P0 | PARTIAL |
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
