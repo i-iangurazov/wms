@@ -1,4 +1,4 @@
-import type { LocationType, ReceivingStatus, WarehouseStatus } from "@prisma/client";
+import type { LocationType, ReceivingLineStatus, ReceivingStatus, WarehouseStatus } from "@prisma/client";
 import { AppError } from "@/server/errors";
 
 export function assertReceivingLocation(input: {
@@ -38,4 +38,35 @@ export function assertQuantityWithinAvailable(quantity: number, available: numbe
   if (quantity > available) {
     throw new AppError("Quantity exceeds available stock.", 409);
   }
+}
+
+export function assertReceiveQuantities(input: { goodQty: number; damagedQty: number }) {
+  if (!Number.isInteger(input.goodQty) || input.goodQty < 0) {
+    throw new AppError("Received good quantity must be zero or greater.", 400);
+  }
+  if (!Number.isInteger(input.damagedQty) || input.damagedQty < 0) {
+    throw new AppError("Received damaged quantity must be zero or greater.", 400);
+  }
+  if (input.goodQty + input.damagedQty <= 0) {
+    throw new AppError("Received quantity must be positive.", 400);
+  }
+}
+
+export function nextReceivingLineStatus(input: {
+  expectedQty: number;
+  receivedQty: number;
+  damagedQty: number;
+}): ReceivingLineStatus {
+  const totalReceived = input.receivedQty + input.damagedQty;
+  if (input.expectedQty > 0 && totalReceived > input.expectedQty) {
+    return "OVER_RECEIVED";
+  }
+  if (input.expectedQty === 0 || totalReceived >= input.expectedQty) {
+    return "RECEIVED";
+  }
+  return "OPEN";
+}
+
+export function shortReceiptQuantity(input: { expectedQty: number; receivedQty: number; damagedQty: number }) {
+  return Math.max(input.expectedQty - input.receivedQty - input.damagedQty, 0);
 }

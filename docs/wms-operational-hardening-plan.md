@@ -489,6 +489,13 @@ Status:
 - Validation: receiving service/route tests and build.
 - Continue when: exact, under, over, damaged, unknown barcode, and double-submit scenarios are covered.
 
+Status:
+- Partially implemented in this pass.
+- Added damaged quantity, short quantity, exception notes, short-close, and over-received statuses.
+- Receive commands now accept good/damaged quantities; damaged quantity is received and immediately marked unavailable through stock state inside the same transaction.
+- Validation passed with `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build`.
+- Remaining hardening: supplier model, unknown-barcode exception record, label printing, route-level receiving tests, configurable over/under policy, and put-away generation from receiving lines.
+
 ### Phase D1: Put-Away Work Generation
 
 - Goal: convert received stock into executable put-away work.

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getRequestContext } from "@/server/auth";
-import { jsonError, jsonOk, parseJsonObject, readNumber, readString } from "@/server/http";
+import { jsonError, jsonOk, parseJsonObject, readBoolean, readNumber, readString } from "@/server/http";
 import { receiveLine } from "@/server/services/receivingService";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const line = await receiveLine(context, {
       lineId: readString(body, "lineId") || params.id,
       quantity: readNumber(body, "quantity"),
+      damagedQuantity: readNumber(body, "damagedQuantity", 0),
+      allowOverReceipt: readBoolean(body, "allowOverReceipt", false),
+      note: readString(body, "note", false),
       idempotencyKey: readString(body, "idempotencyKey", false)
     });
     return jsonOk({ line });

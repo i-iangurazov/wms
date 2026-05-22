@@ -34,6 +34,9 @@ type ReceivingLine = {
   variantId: string | null;
   expectedQty: number;
   receivedQty: number;
+  damagedQty: number;
+  shortQty: number;
+  exceptionNote: string | null;
   status: string;
   product: Product;
   variant: { sku: string; name: string } | null;
@@ -64,6 +67,10 @@ export default function ReceivingPage() {
   const [sessionForm, setSessionForm] = useState({ warehouseId: "", receivingLocationId: "", reference: "" });
   const [lineForm, setLineForm] = useState({ sessionId: "", productId: "", variantId: "", expectedQty: 1 });
   const [receiveQtyByLine, setReceiveQtyByLine] = useState<Record<string, number>>({});
+  const [damagedQtyByLine, setDamagedQtyByLine] = useState<Record<string, number>>({});
+  const [overReceiptByLine, setOverReceiptByLine] = useState<Record<string, boolean>>({});
+  const [noteByLine, setNoteByLine] = useState<Record<string, string>>({});
+  const [shortCloseNoteBySession, setShortCloseNoteBySession] = useState<Record<string, string>>({});
   const receiveKeysRef = useRef<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -199,7 +206,14 @@ export default function ReceivingPage() {
     const response = await fetch(`/api/receiving/sessions/${lineForm.sessionId}/receive`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lineId, quantity, idempotencyKey })
+      body: JSON.stringify({
+        lineId,
+        quantity,
+        damagedQuantity: damagedQtyByLine[lineId] ?? 0,
+        allowOverReceipt: overReceiptByLine[lineId] ?? false,
+        note: noteByLine[lineId],
+        idempotencyKey
+      })
     });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
@@ -214,7 +228,12 @@ export default function ReceivingPage() {
   async function completeSession(id: string) {
     setError(null);
     setMessage(null);
-    const response = await fetch(`/api/receiving/sessions/${id}/complete`, { method: "POST" });
+    const note = shortCloseNoteBySession[id]?.trim();
+    const response = await fetch(`/api/receiving/sessions/${id}/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowShortClose: Boolean(note), note })
+    });
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
       setError(payload.error ?? "Не удалось завершить приёмку.");
@@ -381,7 +400,9 @@ export default function ReceivingPage() {
                     <th className="px-3 py-2">{commonText.product}</th>
                     <th className="px-3 py-2">Ожидали</th>
                     <th className="px-3 py-2">Принято</th>
+                    <th className="px-3 py-2">Повреждено</th>
                     <th className="px-3 py-2">Принять</th>
+                    <th className="px-3 py-2">Исключение</th>
                     <th className="px-3 py-2 text-right">{commonText.actions}</th>
                   </tr>
                 </thead>
@@ -391,21 +412,63 @@ export default function ReceivingPage() {
                       <td className="px-3 py-2">{line.product.sku}</td>
                       <td className="px-3 py-2">{line.expectedQty}</td>
                       <td className="px-3 py-2">{line.receivedQty}</td>
+                      <td className="px-3 py-2">{line.damagedQty}</td>
                       <td className="px-3 py-2">
-                        <input
-                          className={`${inputClass} max-w-28`}
-                          min={1}
-                          type="number"
-                          value={receiveQtyByLine[line.id] ?? 1}
-                          onChange={(event) =>
-                            setReceiveQtyByLine((current) => ({ ...current, [line.id]: Number(event.target.value) }))
-                          }
-                        />
+                        <div className="flex flex-col gap-2">
+                          <input
+                            className={`${inputClass} max-w-28`}
+                            min={0}
+                            type="number"
+                            value={receiveQtyByLine[line.id] ?? 1}
+                            onChange={(event) =>
+                              setReceiveQtyByLine((current) => ({ ...current, [line.id]: Number(event.target.value) }))
+                            }
+                          />
+                          <input
+                            className={`${inputClass} max-w-28`}
+                            min={0}
+                            type="number"
+                            value={damagedQtyByLine[line.id] ?? 0}
+                            onChange={(event) =>
+                              setDamagedQtyByLine((current) => ({ ...current, [line.id]: Number(event.target.value) }))
+                            }
+                            aria-label="Повреждено"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2 text-xs text-muted">
+                            <input
+                              type="checkbox"
+                              checked={overReceiptByLine[line.id] ?? false}
+                              onChange={(event) =>
+                                setOverReceiptByLine((current) => ({ ...current, [line.id]: event.target.checked }))
+                              }
+                            />
+                            Разрешить сверх ожидания
+                          </label>
+                          <input
+                            className={inputClass}
+                            value={noteByLine[line.id] ?? ""}
+                            onChange={(event) =>
+                              setNoteByLine((current) => ({ ...current, [line.id]: event.target.value }))
+                            }
+                            placeholder="Причина, если есть расхождение"
+                          />
+                          {line.shortQty > 0 ? <span className="text-xs text-red-700">Недопоставка: {line.shortQty}</span> : null}
+                          {line.exceptionNote ? <span className="text-xs text-muted">{line.exceptionNote}</span> : null}
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right">
                         <button
                           className={secondaryButtonClass}
-                          disabled={line.status === "RECEIVED" || session.status === "COMPLETED"}
+                          disabled={
+                            line.status === "RECEIVED" ||
+                            line.status === "CLOSED_SHORT" ||
+                            line.status === "OVER_RECEIVED" ||
+                            session.status === "COMPLETED"
+                          }
                           type="button"
                           onClick={() => void receiveLine(line.id)}
                         >
@@ -417,6 +480,20 @@ export default function ReceivingPage() {
                 </tbody>
               </table>
             </div>
+            {session.status !== "COMPLETED" ? (
+              <div className="mt-4 rounded-md bg-surface p-3">
+                <Field label="Причина закрытия с недопоставкой">
+                  <input
+                    className={inputClass}
+                    value={shortCloseNoteBySession[session.id] ?? ""}
+                    onChange={(event) =>
+                      setShortCloseNoteBySession((current) => ({ ...current, [session.id]: event.target.value }))
+                    }
+                    placeholder="Например: поставщик привёз не всё"
+                  />
+                </Field>
+              </div>
+            ) : null}
           </section>
         ))}
       </div>

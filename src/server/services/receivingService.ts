@@ -8,8 +8,11 @@ import { variantKey } from "@/server/services/stockMovementEngine";
 import { applyStockMovementInTransaction } from "@/server/services/stockMovementService";
 import { attachWorkflowMovement, claimWorkflowCommand } from "@/server/services/commandIdempotency";
 import {
+  assertReceiveQuantities,
   assertReceivingLocation,
-  assertReceivingSessionOpen
+  assertReceivingSessionOpen,
+  nextReceivingLineStatus,
+  shortReceiptQuantity
 } from "@/server/services/receivingRules";
 import { getDefaultReceivingLocationId } from "@/server/services/warehouseRuleService";
 
@@ -131,7 +134,14 @@ export async function addReceivingLine(
 
 export async function receiveLine(
   context: RequestContext,
-  input: { lineId: string; quantity: number; idempotencyKey?: string | null }
+  input: {
+    lineId: string;
+    quantity: number;
+    damagedQuantity?: number;
+    allowOverReceipt?: boolean;
+    note?: string | null;
+    idempotencyKey?: string | null;
+  }
 ) {
   requirePermission(context.role, "WMS_RECEIVE_STOCK");
   return prisma.$transaction(async (tx) => {
@@ -145,36 +155,84 @@ export async function receiveLine(
     const command = await claimWorkflowCommand(tx, context, {
       idempotencyKey: input.idempotencyKey,
       operation: "RECEIVE",
-      payload: { action: "receiveLine", lineId: input.lineId, quantity: input.quantity }
+      payload: {
+        action: "receiveLine",
+        lineId: input.lineId,
+        quantity: input.quantity,
+        damagedQuantity: input.damagedQuantity ?? 0,
+        allowOverReceipt: input.allowOverReceipt ?? false
+      }
     });
     if (command?.replay) {
       return line;
     }
     assertReceivingSessionOpen(line.session.status);
-    if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
-      throw new AppError("Received quantity must be positive.", 400);
-    }
+    const damagedQuantity = input.damagedQuantity ?? 0;
+    assertReceiveQuantities({ goodQty: input.quantity, damagedQty: damagedQuantity });
     const nextReceived = line.receivedQty + input.quantity;
-    if (line.expectedQty > 0 && nextReceived > line.expectedQty) {
+    const nextDamaged = line.damagedQty + damagedQuantity;
+    const nextTotal = nextReceived + nextDamaged;
+    if (line.expectedQty > 0 && nextTotal > line.expectedQty && !input.allowOverReceipt) {
       throw new AppError("Received quantity exceeds expected quantity.", 409);
     }
+    if (line.expectedQty > 0 && nextTotal > line.expectedQty && input.allowOverReceipt) {
+      requirePermission(context.role, "WMS_ADJUST_STOCK");
+    }
 
-    const movement = await applyStockMovementInTransaction(tx, context, {
-      productId: line.productId,
-      variantId: line.variantId,
-      type: "RECEIVE",
-      quantity: input.quantity,
-      toLocationId: line.session.receivingLocationId,
-      referenceType: "ReceivingLine",
-      referenceId: line.id
-    });
-    await attachWorkflowMovement(tx, command?.commandId, movement.id);
+    let movementId: string | undefined;
+    if (input.quantity > 0) {
+      const movement = await applyStockMovementInTransaction(tx, context, {
+        productId: line.productId,
+        variantId: line.variantId,
+        type: "RECEIVE",
+        quantity: input.quantity,
+        toLocationId: line.session.receivingLocationId,
+        referenceType: "ReceivingLine",
+        referenceId: line.id,
+        note: input.note
+      });
+      movementId = movement.id;
+    }
+    if (damagedQuantity > 0) {
+      const damagedReceive = await applyStockMovementInTransaction(tx, context, {
+        productId: line.productId,
+        variantId: line.variantId,
+        type: "RECEIVE",
+        quantity: damagedQuantity,
+        toLocationId: line.session.receivingLocationId,
+        referenceType: "ReceivingLine",
+        referenceId: line.id,
+        note: input.note
+      });
+      movementId = movementId ?? damagedReceive.id;
+      await applyStockMovementInTransaction(tx, context, {
+        productId: line.productId,
+        variantId: line.variantId,
+        type: "ADJUSTMENT",
+        reason: "DAMAGED",
+        quantity: damagedQuantity,
+        stockStateLocationId: line.session.receivingLocationId,
+        stockStateDelta: { damagedQty: damagedQuantity },
+        referenceType: "ReceivingLine",
+        referenceId: line.id,
+        note: input.note ?? "Повреждено при приёмке"
+      });
+    }
+    if (movementId) {
+      await attachWorkflowMovement(tx, command?.commandId, movementId);
+    }
 
     const updated = await tx.receivingLine.update({
       where: { id: line.id },
       data: {
         receivedQty: nextReceived,
-        status: line.expectedQty === 0 || nextReceived >= line.expectedQty ? "RECEIVED" : "OPEN"
+        damagedQty: nextDamaged,
+        status: nextReceivingLineStatus({
+          expectedQty: line.expectedQty,
+          receivedQty: nextReceived,
+          damagedQty: nextDamaged
+        }),
+        exceptionNote: input.note?.trim() || line.exceptionNote
       }
     });
     await writeAuditLog(tx, {
@@ -183,13 +241,17 @@ export async function receiveLine(
       action: "receiving_line.receive",
       entityType: "ReceivingLine",
       entityId: line.id,
-      metadata: { quantity: input.quantity }
+      metadata: { quantity: input.quantity, damagedQuantity }
     });
     return updated;
   });
 }
 
-export async function completeReceivingSession(context: RequestContext, id: string) {
+export async function completeReceivingSession(
+  context: RequestContext,
+  id: string,
+  input: { allowShortClose?: boolean; note?: string | null } = {}
+) {
   requirePermission(context.role, "WMS_RECEIVE_STOCK");
   return prisma.$transaction(async (tx) => {
     const session = await tx.receivingSession.findFirst({
@@ -205,7 +267,30 @@ export async function completeReceivingSession(context: RequestContext, id: stri
     }
     const openLine = session.lines.find((line) => line.status !== "RECEIVED");
     if (openLine) {
-      throw new AppError("All receiving lines must be received before completion.", 409);
+      if (!input.allowShortClose) {
+        throw new AppError("All receiving lines must be received before completion.", 409);
+      }
+      if (!input.note?.trim()) {
+        throw new AppError("Short receiving close requires a note.", 400);
+      }
+      await Promise.all(
+        session.lines
+          .filter((line) => line.status === "OPEN")
+          .map((line) =>
+            tx.receivingLine.update({
+              where: { id: line.id },
+              data: {
+                status: "CLOSED_SHORT",
+                shortQty: shortReceiptQuantity({
+                  expectedQty: line.expectedQty,
+                  receivedQty: line.receivedQty,
+                  damagedQty: line.damagedQty
+                }),
+                exceptionNote: input.note
+              }
+            })
+          )
+      );
     }
     const updated = await tx.receivingSession.update({
       where: { id: session.id },

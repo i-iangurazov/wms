@@ -1050,3 +1050,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: admins can import a CSV from the Russian Products page and get row-specific Russian errors instead of a generic failure.
 - Architecture review: product import is permission-gated, tenant-scoped, transactional, and creates barcode-label aliases through the registry table. It does not mutate stock.
 - Remaining risk: no XLSX parser, no dry-run preview screen, no update-existing mode, no route/database import tests, and DB uniqueness conflicts still need better row-level reporting.
+
+#### Phase 24: Receiving Exceptions Foundation
+
+- Status: partially hardened for real receiving discrepancies.
+- What changed: added receiving line statuses for `CLOSED_SHORT` and `OVER_RECEIVED`, fields for damaged/short quantities and exception notes, non-negative DB checks, receive API support for good/damaged quantities, controlled over-receipt, short-close notes, Russian UI controls, and receiving rule tests.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: receiving remains one screen in Russian, with simple fields for normal quantity, damaged quantity, over-receipt permission, and short-close reason.
+- Architecture review: good and damaged receipts still use `StockMovementService`; damaged receipt creates a receive movement and a damaged stock-state adjustment inside the same transaction. Under-receipt closure does not mutate stock.
+- Remaining risk: no supplier model, no dedicated unknown-barcode exception record, no receiving label printout, no route-level tests for over/under/damaged receipt, and over-receipt policy is permission-based rather than configurable per supplier/warehouse.

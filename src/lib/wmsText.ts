@@ -26,6 +26,8 @@ export const statusLabels: Record<string, string> = {
   DRAFT: "Черновик",
   RECEIVING: "Приёмка",
   RECEIVED: "Принято",
+  CLOSED_SHORT: "Недопоставка",
+  OVER_RECEIVED: "Принято сверх",
   COUNTING: "Подсчёт",
   PENDING_APPROVAL: "Требует проверки",
   APPROVED: "Утверждено",

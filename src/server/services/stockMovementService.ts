@@ -47,6 +47,10 @@ function requireMovementPermission(context: RequestContext, input: MovementInput
     return;
   }
   if (input.type === "ADJUSTMENT") {
+    if (input.reason === "DAMAGED" && input.referenceType === "ReceivingLine") {
+      requirePermission(context.role, "WMS_RECEIVE_STOCK");
+      return;
+    }
     requirePermission(context.role, "WMS_ADJUST_STOCK");
     return;
   }

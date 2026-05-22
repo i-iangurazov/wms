@@ -62,6 +62,8 @@ enum ReceivingStatus {
 enum ReceivingLineStatus {
   OPEN
   RECEIVED
+  CLOSED_SHORT
+  OVER_RECEIVED
   CANCELLED
 }
 
@@ -554,6 +556,9 @@ model ReceivingLine {
   variantKey  String
   expectedQty Int                 @default(0)
   receivedQty Int                 @default(0)
+  damagedQty  Int                 @default(0)
+  shortQty    Int                 @default(0)
+  exceptionNote String?
   status      ReceivingLineStatus @default(OPEN)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
