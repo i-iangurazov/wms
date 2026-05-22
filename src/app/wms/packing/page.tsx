@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
@@ -138,13 +139,13 @@ export default function PackingPage() {
         description="Проверьте собранные товары, упакуйте заказ и передайте его в отгрузку."
       />
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {message ? <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {message ? <div className="mb-4"><SuccessState message={message} /></div> : null}
 
-      {!data ? <div className="text-sm text-muted">Загрузка упаковки...</div> : null}
+      {!data ? <LoadingState message="Загрузка упаковки..." /> : null}
       {data ? (
         <div className="space-y-6">
-          <form onSubmit={createWork} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <form onSubmit={createWork} className={cardClass}>
             <h2 className="text-base font-semibold">Создать упаковку</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
               <Field label="Собранный заказ">
@@ -185,7 +186,7 @@ export default function PackingPage() {
             </div>
           </form>
 
-          <section className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section className={cardClass}>
             <h2 className="text-base font-semibold">Задания</h2>
             <div className="mt-4 space-y-4">
               {data.work.length === 0 ? (
@@ -204,7 +205,7 @@ export default function PackingPage() {
                       {work.lines.map((line) => {
                         const remaining = line.quantity - line.completedQuantity;
                         return (
-                          <div key={line.id} className="rounded-md bg-panel p-3">
+                          <div key={line.id} className="rounded-md border border-border bg-panel p-3">
                             <div className="text-sm font-medium">
                               {line.product.sku} · {line.product.name}
                             </div>

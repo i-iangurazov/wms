@@ -40,4 +40,4 @@ export const dangerButtonClass =
 
 export const cardClass = "rounded-lg border border-border bg-panel p-5 shadow-sm";
 
-export const tableWrapClass = "overflow-hidden rounded-lg border border-border bg-panel shadow-sm";
+export const tableWrapClass = "overflow-x-auto rounded-lg border border-border bg-panel shadow-sm";

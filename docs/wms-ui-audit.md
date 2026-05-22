@@ -28,13 +28,13 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | `Обзор` | Metrics and panels use repeated custom cards; loading/error states are inline. | Dashboard cards with consistent card/table/list spacing. | Reuse shared card/loading/error primitives and status mapping. | P1 | `src/app/wms/page.tsx` | IMPLEMENTED |
 | `Задачи` | Functional task center, but card styling is custom. | Worker task center with polished cards and clear actions. | Use shared card/action/status patterns. | P0 | `src/app/wms/tasks/page.tsx` | TODO |
 | `Товары и остатки` | Hub is clean but plain. | Clear grouped entry points. | Use improved WorkflowHub. | P1 | `src/app/wms/stock/page.tsx` | TODO |
-| `Приёмка` | Large functional page; forms/cards are custom and dense. | Scanner-first receiving with polished controls, clear success/error. | Shared controls and scanner layout polish. | P0 | `src/app/wms/receiving/page.tsx` | TODO |
-| `Размещение` | Worker flow exists but page feels like forms and cards bolted together. | Directed put-away task screen with clear next step. | Shared scanner/card/status styles. | P0 | `src/app/wms/put-away/page.tsx` | TODO |
+| `Приёмка` | Large functional page; forms/cards are custom and dense. | Scanner-first receiving with polished controls, clear success/error. | Shared controls and scanner layout polish. | P0 | `src/app/wms/receiving/page.tsx` | PARTIAL |
+| `Размещение` | Worker flow exists but page feels like forms and cards bolted together. | Directed put-away task screen with clear next step. | Shared scanner/card/status styles. | P0 | `src/app/wms/put-away/page.tsx` | PARTIAL |
 | `Перемещения` | Select-heavy form; native select styling is weak. | Clean scanner-compatible transfer wizard. | Fix selects globally; polish form card. | P0 | `src/app/wms/transfers/page.tsx` | TODO |
-| `Сборка заказов` | Functional but visually busy; short-pick action is another secondary button. | Guided pick task with clear reserve/pick/short states. | Shared scanner layout, button variants, status badges. | P0 | `src/app/wms/picking/page.tsx` | TODO |
-| `Упаковка` | Good foundation but custom cards/messages. | Clear verification screen. | Shared NoticeBanner, cards, controls. | P0 | `src/app/wms/packing/page.tsx` | TODO |
-| `Инвентаризация` | Table is cramped; inline number inputs in table. | Count table with readable rows and clear actions. | Global table styles and input sizing. | P1 | `src/app/wms/cycle-counts/page.tsx` | TODO |
-| `Пополнение` | Operational page but cards/forms custom. | Work/rule screen with status clarity. | Shared cards, statuses, controls. | P1 | `src/app/wms/replenishment/page.tsx` | TODO |
+| `Сборка заказов` | Functional but visually busy; short-pick action is another secondary button. | Guided pick task with clear reserve/pick/short states. | Shared scanner layout, button variants, status badges. | P0 | `src/app/wms/picking/page.tsx` | PARTIAL |
+| `Упаковка` | Good foundation but custom cards/messages. | Clear verification screen. | Shared NoticeBanner, cards, controls. | P0 | `src/app/wms/packing/page.tsx` | PARTIAL |
+| `Инвентаризация` | Table is cramped; inline number inputs in table. | Count table with readable rows and clear actions. | Global table styles and input sizing. | P1 | `src/app/wms/cycle-counts/page.tsx` | PARTIAL |
+| `Пополнение` | Operational page but cards/forms custom. | Work/rule screen with status clarity. | Shared cards, statuses, controls. | P1 | `src/app/wms/replenishment/page.tsx` | PARTIAL |
 | `Склады` / `Склады и ячейки` | Dense setup forms/tables; inline text buttons. | Admin setup with clean forms, readable tables, restrained actions. | Global form/table, replace text buttons where visible. | P0 | `locations/page.tsx`, `warehouses/page.tsx` | TODO |
 | `Товары` | Product import and forms are functional but admin-heavy. | Clean catalog admin screen with polished import errors. | Shared controls, table styling, notice banners. | P1 | `products/page.tsx` | TODO |
 | `Штрихкоды` | Simple registry; likely form/select issues. | Clean label registry and export panel. | Shared controls/table. | P1 | `barcodes/page.tsx` | IMPLEMENTED |
@@ -75,3 +75,9 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 - Status: PARTIAL.
 - Acceptance: active WMS pages use shared primitives or global WMS styles; no obvious raw select/table/badge scaffolding.
 - Progress: dashboard, barcode registry, stock, movement history, audit log, and access-denied state now use shared loading/error/card/table/button primitives. Worker flows and dense setup pages still need page-level polish.
+
+### UI Phase 4: Worker Flow Polish
+
+- Status: PARTIAL.
+- Acceptance: receiving, put-away, picking, packing, cycle count, and replenishment use scanner-friendly shared cards, feedback states, table wrappers, and no premature empty states.
+- Progress: worker flow pages now use shared card/loading/table primitives in the main task surfaces. Remaining work: visual QA on mobile viewports, sticky action areas, and replacing the densest inline row controls with purpose-built worker subcomponents.

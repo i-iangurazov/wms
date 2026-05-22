@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, ghostButtonClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
@@ -204,7 +204,7 @@ export default function PutAwayPage() {
         scanHint="Сканируйте товар. Затем проверьте ячейку приёмки и ячейку назначения."
         resultHint="Товар уйдёт из приёмки и появится в выбранной ячейке."
         aside={
-          <div className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <div className={cardClass}>
             <h2 className="mb-4 text-base font-semibold">Товар в зоне приёмки</h2>
             {receivingBalances.length === 0 ? (
               <EmptyState title={emptyStates.putawayTitle} body={emptyStates.putawayBody} />
@@ -238,7 +238,7 @@ export default function PutAwayPage() {
                   .map((session) => (
                     <button
                       key={session.id}
-                      className="block w-full rounded-md border border-border bg-white px-3 py-2 text-left text-sm hover:bg-surface"
+                      className={`${ghostButtonClass} w-full justify-start bg-white text-left`}
                       type="button"
                       onClick={() => void generateWork(session.id)}
                     >
@@ -269,7 +269,7 @@ export default function PutAwayPage() {
           </div>
         }
       >
-        <form onSubmit={submitPutAway} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <form onSubmit={submitPutAway} className={cardClass}>
           <ScanField
             label={scannerText.product}
             placeholder="SKU или штрихкод"

@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ScanField } from "@/components/wms/ScanField";
@@ -207,13 +208,13 @@ export default function ReplenishmentPage() {
         description="Создавайте простые правила min/max и переносите товар из хранения в ячейки сборки."
       />
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {message ? <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700">{message}</div> : null}
-      {loading ? <div className="text-sm text-muted">Загрузка пополнения...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {message ? <div className="mb-4"><SuccessState message={message} /></div> : null}
+      {loading ? <LoadingState message="Загрузка пополнения..." /> : null}
 
       {data ? (
         <div className="space-y-6">
-          <form onSubmit={createRule} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <form onSubmit={createRule} className={cardClass}>
             <h2 className="text-base font-semibold">Правило пополнения</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <Field label="Склад">
@@ -347,14 +348,14 @@ export default function ReplenishmentPage() {
             </div>
           </form>
 
-          <section className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section className={cardClass}>
             <h2 className="text-base font-semibold">Правила</h2>
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
               {data.rules.length === 0 ? (
                 <EmptyState title="Нет правил пополнения" body="Создайте правило min/max для ячейки сборки." />
               ) : (
                 data.rules.map((rule) => (
-                  <div key={rule.id} className="rounded-md bg-surface p-3 text-sm">
+                  <div key={rule.id} className="rounded-md border border-border bg-surface p-3 text-sm">
                     <div className="font-medium">
                       {rule.product.sku} → {rule.pickLocation.code}
                     </div>
@@ -381,7 +382,7 @@ export default function ReplenishmentPage() {
             </div>
           </section>
 
-          <section className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section className={cardClass}>
             <h2 className="text-base font-semibold">Задания на пополнение</h2>
             <div className="mt-4 space-y-4">
               {data.work.length === 0 ? (
@@ -397,7 +398,7 @@ export default function ReplenishmentPage() {
                       {work.lines.map((line) => {
                         const remaining = line.quantity - line.completedQuantity;
                         return (
-                          <div key={line.id} className="rounded-md bg-panel p-3">
+                          <div key={line.id} className="rounded-md border border-border bg-panel p-3">
                             <div className="text-sm font-medium">
                               {line.product.sku}: {line.sourceLocation.code} → {line.destinationLocation?.code}
                             </div>

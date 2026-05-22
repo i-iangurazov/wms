@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
@@ -35,6 +36,7 @@ export default function CycleCountsPage() {
   const [sessions, setSessions] = useState<CountSession[]>([]);
   const [form, setForm] = useState({ warehouseId: "", locationId: "" });
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -47,6 +49,7 @@ export default function CycleCountsPage() {
   );
 
   async function loadData() {
+    setLoading(true);
     const [warehouseResponse, locationResponse, countResponse] = await Promise.all([
       fetch("/api/warehouses", { cache: "no-store" }),
       fetch("/api/warehouse-locations", { cache: "no-store" }),
@@ -57,6 +60,7 @@ export default function CycleCountsPage() {
     const countPayload = (await countResponse.json()) as { sessions?: CountSession[]; error?: string };
     if (!warehouseResponse.ok || !locationResponse.ok || !countResponse.ok) {
       setError(warehousePayload.error ?? locationPayload.error ?? countPayload.error ?? "Не удалось загрузить инвентаризации.");
+      setLoading(false);
       return;
     }
     const nextWarehouses = warehousePayload.warehouses ?? [];
@@ -68,6 +72,7 @@ export default function CycleCountsPage() {
       warehouseId: current.warehouseId || nextWarehouses[0]?.id || "",
       locationId: current.locationId || nextLocations[0]?.id || ""
     }));
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -136,13 +141,14 @@ export default function CycleCountsPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
+      {loading ? <LoadingState message="Загрузка инвентаризации..." /> : null}
       <ScannerStepLayout
         title="Проверьте ячейку"
         instruction="Создайте пересчёт по складу и ячейке. Остатки не изменятся, пока менеджер не утвердит расхождения."
         scanHint="На этом шаге выберите ячейку. Скан товаров появится в следующем проходе MVP."
         resultHint="После утверждения расхождения создадут движение инвентаризации."
       >
-      <form onSubmit={createSession} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={createSession} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label={commonText.warehouse}>
             <select
@@ -183,12 +189,12 @@ export default function CycleCountsPage() {
       </form>
       </ScannerStepLayout>
 
-      {sessions.length === 0 ? (
+      {sessions.length === 0 && !loading ? (
         <EmptyState title={emptyStates.countsTitle} body={emptyStates.countsBody} />
       ) : null}
       <div className="space-y-4">
         {sessions.map((session) => (
-          <section key={session.id} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section key={session.id} className={cardClass}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="font-semibold">
@@ -224,7 +230,7 @@ export default function CycleCountsPage() {
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className={tableWrapClass}>
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-surface text-xs uppercase text-muted">
                   <tr>

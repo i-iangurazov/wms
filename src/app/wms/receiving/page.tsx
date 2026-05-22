@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
@@ -251,7 +252,7 @@ export default function ReceivingPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
-      {loading ? <div className="text-sm text-muted">Загрузка приёмки...</div> : null}
+      {loading ? <LoadingState message="Загрузка приёмки..." /> : null}
 
       <ScannerStepLayout
         title="Примите товар"
@@ -260,7 +261,7 @@ export default function ReceivingPage() {
         resultHint="Товар появится в ячейке приёмки и будет готов к размещению."
       >
       <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={createSession} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <form onSubmit={createSession} className={cardClass}>
           <h2 className="mb-4 text-base font-semibold">Новая приёмка</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={commonText.warehouse}>
@@ -311,7 +312,7 @@ export default function ReceivingPage() {
           </div>
         </form>
 
-        <form onSubmit={addLine} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <form onSubmit={addLine} className={cardClass}>
           <h2 className="mb-4 text-base font-semibold">Добавить товар</h2>
           <ScanField
             label={scannerText.product}
@@ -373,7 +374,7 @@ export default function ReceivingPage() {
           <EmptyState title={emptyStates.receivingTitle} body={emptyStates.receivingBody} />
         ) : null}
         {sessions.map((session) => (
-          <section key={session.id} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section key={session.id} className={cardClass}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="font-semibold">{session.reference ?? session.id.slice(0, 8)}</div>
@@ -393,7 +394,7 @@ export default function ReceivingPage() {
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className={tableWrapClass}>
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-surface text-xs uppercase text-muted">
                   <tr>

@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
@@ -52,10 +53,12 @@ export default function PickingPage() {
   const pickKeysRef = useRef<Record<string, string>>({});
   const allocationKeysRef = useRef<Record<string, string>>({});
   const shortPickKeysRef = useRef<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   async function loadData() {
+    setLoading(true);
     const [warehouseResponse, productResponse, orderResponse, workResponse] = await Promise.all([
       fetch("/api/warehouses", { cache: "no-store" }),
       fetch("/api/products", { cache: "no-store" }),
@@ -70,6 +73,7 @@ export default function PickingPage() {
       setError(
         warehousePayload.error ?? productPayload.error ?? orderPayload.error ?? workPayload.error ?? "Не удалось загрузить сборку заказов."
       );
+      setLoading(false);
       return;
     }
     const nextWarehouses = warehousePayload.warehouses ?? [];
@@ -88,6 +92,7 @@ export default function PickingPage() {
       orderId: current.orderId || nextOrders[0]?.id || "",
       warehouseId: current.warehouseId || nextWarehouses[0]?.id || ""
     }));
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -207,6 +212,7 @@ export default function PickingPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
+      {loading ? <LoadingState message="Загрузка сборки заказов..." /> : null}
 
       <ScannerStepLayout
         title="Соберите заказ"
@@ -214,7 +220,7 @@ export default function PickingPage() {
         scanHint="Сканируйте ячейку и товар из строки задания."
         resultHint="После подтверждения резерв снимется, а товар спишется из ячейки через складской сервис."
       >
-      <form onSubmit={createOrder} className="mb-4 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={createOrder} className={`${cardClass} mb-4`}>
         <h2 className="mb-3 text-base font-semibold">Новый заказ для сборки</h2>
         <div className="grid gap-4 md:grid-cols-5">
           <Field label="Номер заказа">
@@ -271,7 +277,7 @@ export default function PickingPage() {
         </div>
       </form>
 
-      <form onSubmit={createPickWork} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={createPickWork} className={`${cardClass} mb-6`}>
         <h2 className="mb-3 text-base font-semibold">Задание на сборку</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Заказ">
@@ -313,10 +319,10 @@ export default function PickingPage() {
       </form>
       </ScannerStepLayout>
 
-      {work.length === 0 ? <EmptyState title="Нет заданий для сборки" body="Создайте задание по заказу, когда товар есть в ячейках сборки." /> : null}
+      {work.length === 0 && !loading ? <EmptyState title="Нет заданий для сборки" body="Создайте задание по заказу, когда товар есть в ячейках сборки." /> : null}
       <div className="space-y-4">
         {work.map((item) => (
-          <section key={item.id} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+          <section key={item.id} className={cardClass}>
             <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="font-semibold">{item.sourceOrder?.number ?? item.id.slice(0, 8)}</div>

@@ -1149,3 +1149,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: high-traffic read/manager screens now have consistent Russian loading/error states, calmer card surfaces, and table wrappers. The UI still needs a deeper worker-flow pass for receiving, put-away, picking, packing, cycle count, and replenishment.
 - Architecture review: UI-only changes; no stock, ledger, permission, or tenant-isolation behavior changed.
 - Remaining risk: no browser/mobile visual smoke test yet; visual quality is improved but not fully audited across every active WMS page.
+
+#### Phase 35: UI Worker Flow Polish Pass
+
+- Status: partially implemented; mobile/browser visual QA and sticky scanner action areas remain gaps.
+- What changed: applied shared loading, card, table, and scanner surface primitives to `Приёмка`, `Размещение`, `Сборка заказов`, `Упаковка`, `Инвентаризация`, and `Пополнение`; prevented picking/cycle count empty states from appearing before initial data load; made table wrappers horizontally scrollable for dense worker tables.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: worker flows are visually more consistent and less scaffold-like, with clearer loading states and calmer task surfaces. The screens are still operationally dense and need a browser/mobile visual pass before UI hardening can be called complete.
+- Architecture review: UI-only changes; stock movement service, transactions, movement ledger, permissions, and tenant isolation are unchanged.
+- Remaining risk: receiving/cycle-count tables still expose dense inline row controls, and there is no Playwright/mobile visual smoke test yet.
