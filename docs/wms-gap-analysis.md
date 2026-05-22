@@ -1140,3 +1140,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: the shared layer now targets a calm Russian SaaS UI instead of browser-default scaffold controls. Selects have padding and custom arrows, statuses are centrally mapped, and worker scan panels have clearer hierarchy.
 - Architecture review: UI-only changes; stock rules, transactions, ledger append-only behavior, permissions, and tenant isolation are unchanged.
 - Remaining risk: not every page has been individually redesigned yet. Some screens still contain page-local loading/error blocks and dense admin sections. Browser/mobile visual smoke coverage remains missing.
+
+#### Phase 34: UI Active Screen Consistency Pass
+
+- Status: partially implemented; worker scanner flows and dense setup pages still need page-by-page polish.
+- What changed: applied shared loading/error/success states, `cardClass`, `tableWrapClass`, and shared access-denied button/card styling to `Обзор`, `Штрихкоды`, `Остатки`, `История движений`, `Журнал действий`, and the access-denied component.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: high-traffic read/manager screens now have consistent Russian loading/error states, calmer card surfaces, and table wrappers. The UI still needs a deeper worker-flow pass for receiving, put-away, picking, packing, cycle count, and replenishment.
+- Architecture review: UI-only changes; no stock, ledger, permission, or tenant-isolation behavior changed.
+- Remaining risk: no browser/mobile visual smoke test yet; visual quality is improved but not fully audited across every active WMS page.

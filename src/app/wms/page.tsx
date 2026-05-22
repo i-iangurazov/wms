@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { cardClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { emptyStates, labelFor, movementTypeLabels } from "@/lib/wmsText";
 
@@ -87,13 +89,13 @@ export default function WmsDashboardPage() {
         title="Обзор"
         description="Главное по складу: открытые задания, последние движения и расхождения по остаткам."
       />
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {!dashboard ? <div className="text-sm text-muted">Загрузка обзора...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {!dashboard ? <LoadingState message="Загрузка обзора..." /> : null}
       {dashboard ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {(Object.keys(dashboard.metrics) as (keyof Dashboard["metrics"])[]).map((key) => (
-              <div key={key} className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+              <div key={key} className={cardClass}>
                 <div className="text-sm font-medium text-muted">{metricLabels[key]}</div>
                 <div className="mt-2 text-2xl font-semibold">{dashboard.metrics[key]}</div>
               </div>
@@ -177,7 +179,7 @@ export default function WmsDashboardPage() {
 
 function DashboardPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+    <section className={cardClass}>
       <h2 className="mb-3 text-base font-semibold">{title}</h2>
       <div className="space-y-2">{children}</div>
     </section>

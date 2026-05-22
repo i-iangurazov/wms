@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { inputClass } from "@/components/FormControls";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import {
   commonText,
@@ -72,10 +73,10 @@ export default function MovementsPage() {
         title="История движений"
         description="Неизменяемая история всех операций с остатками."
       />
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {loading ? <div className="text-sm text-muted">Загрузка движений...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {loading ? <LoadingState message="Загрузка движений..." /> : null}
       {movements.length > 0 ? (
-        <div className="mb-4 grid gap-3 rounded-lg border border-border bg-panel p-4 shadow-sm md:grid-cols-[1fr_220px]">
+        <div className={`${cardClass} mb-4 grid gap-3 md:grid-cols-[1fr_220px]`}>
           <input
             className={inputClass}
             value={search}
@@ -99,7 +100,7 @@ export default function MovementsPage() {
         <EmptyState title="Движения не найдены" body="Попробуйте изменить поиск или тип операции." />
       ) : null}
       {filteredMovements.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+        <div className={tableWrapClass}>
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
               <tr>

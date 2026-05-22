@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { inputClass } from "@/components/FormControls";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { auditActionLabels, auditEntityLabels, commonText, emptyStates, labelFor } from "@/lib/wmsText";
 
@@ -71,10 +72,10 @@ export default function AuditPage() {
         title="Журнал действий"
         description="Кто и когда менял склады, товары, задания и остатки."
       />
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {loading ? <div className="text-sm text-muted">Загрузка журнала...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {loading ? <LoadingState message="Загрузка журнала..." /> : null}
       {logs.length > 0 ? (
-        <div className="mb-4 grid gap-3 rounded-lg border border-border bg-panel p-4 shadow-sm md:grid-cols-[1fr_260px]">
+        <div className={`${cardClass} mb-4 grid gap-3 md:grid-cols-[1fr_260px]`}>
           <input
             className={inputClass}
             value={search}
@@ -96,7 +97,7 @@ export default function AuditPage() {
         <EmptyState title="Действия не найдены" body="Попробуйте изменить поиск или фильтр." />
       ) : null}
       {filteredLogs.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+        <div className={tableWrapClass}>
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
               <tr>

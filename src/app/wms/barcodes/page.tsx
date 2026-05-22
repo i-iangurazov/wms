@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 
 type LabelType = "PRODUCT" | "PRODUCT_VARIANT" | "LOCATION";
@@ -141,7 +142,7 @@ export default function BarcodesPage() {
         }
       />
 
-      <form onSubmit={createLabel} className="mb-6 grid gap-4 rounded-lg border border-border bg-panel p-4 md:grid-cols-5">
+      <form onSubmit={createLabel} className={`${cardClass} mb-6 grid gap-4 md:grid-cols-5`}>
         <Field label="Тип">
           <select className={inputClass} value={type} onChange={(event) => setType(event.target.value as LabelType)}>
             {labelTypes.map((option) => (
@@ -174,15 +175,15 @@ export default function BarcodesPage() {
         </div>
       </form>
 
-      {error ? <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-      {message ? <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{message}</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {message ? <div className="mb-4"><SuccessState message={message} /></div> : null}
 
       {loading ? (
-        <div className="text-sm text-muted">Загрузка...</div>
+        <LoadingState message="Загрузка штрихкодов..." />
       ) : labels.length === 0 ? (
         <EmptyState title="Штрихкодов пока нет" body="Добавьте первый код для товара или ячейки, чтобы упростить сканирование." />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel">
+        <div className={tableWrapClass}>
           <table className="min-w-full divide-y divide-border text-sm">
             <thead className="bg-surface text-left text-muted">
               <tr>
