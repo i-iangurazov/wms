@@ -227,6 +227,7 @@ Current limitation: the operational E2E uses API setup/execution for parts of re
 - Replace native selects in active WMS pages with shared `Select`.
 - Replace custom tables with shared `Table`.
 - Replace page-specific actions with `Button`, `Dropdown`, `Dialog`.
+- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`; table/action/modal migration remains open.
 
 ### UI-R4: Worker Workflow Redesign
 

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { ScanField } from "@/components/wms/ScanField";
 import { ScannerStepLayout } from "@/components/wms/ScannerStepLayout";
@@ -153,34 +154,23 @@ export default function AdjustmentsPage() {
             onScan={(scan) => void selectScannedProduct(scan)}
           />
           <Field label={commonText.location}>
-            <select
-              className={inputClass}
+            <Select
               value={form.locationId}
-              onChange={(event) => setForm((current) => ({ ...current, locationId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите ячейку</option>
-              {locations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.code} ({labelFor(locationTypeLabels, location.type)})
-                </option>
-              ))}
-            </select>
+              onValueChange={(locationId) => setForm((current) => ({ ...current, locationId }))}
+              placeholder="Выберите ячейку"
+              options={locations.map((location) => ({
+                value: location.id,
+                label: `${location.code} (${labelFor(locationTypeLabels, location.type)})`
+              }))}
+            />
           </Field>
           <Field label={commonText.product}>
-            <select
-              className={inputClass}
+            <Select
               value={form.productId}
-              onChange={(event) => setForm((current) => ({ ...current, productId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите товар</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.sku} - {product.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={(productId) => setForm((current) => ({ ...current, productId }))}
+              placeholder="Выберите товар"
+              options={products.map((product) => ({ value: product.id, label: `${product.sku} - ${product.name}` }))}
+            />
           </Field>
           <Field label="Изменение количества">
             <input
@@ -191,28 +181,22 @@ export default function AdjustmentsPage() {
             />
           </Field>
           <Field label="Что изменить">
-            <select
-              className={inputClass}
+            <Select
               value={form.targetState}
-              onChange={(event) => setForm((current) => ({ ...current, targetState: event.target.value }))}
-            >
-              <option value="ON_HAND">Фактический остаток</option>
-              <option value="DAMAGED">Повреждено, недоступно для продажи</option>
-              <option value="BLOCKED">Заблокировано, требует проверки</option>
-            </select>
+              onValueChange={(targetState) => setForm((current) => ({ ...current, targetState }))}
+              options={[
+                { value: "ON_HAND", label: "Фактический остаток" },
+                { value: "DAMAGED", label: "Повреждено, недоступно для продажи" },
+                { value: "BLOCKED", label: "Заблокировано, требует проверки" }
+              ]}
+            />
           </Field>
           <Field label="Причина">
-            <select
-              className={inputClass}
+            <Select
               value={form.reason}
-              onChange={(event) => setForm((current) => ({ ...current, reason: event.target.value }))}
-            >
-              {reasons.map((reason) => (
-                <option key={reason} value={reason}>
-                  {labelFor(adjustmentReasonLabels, reason)}
-                </option>
-              ))}
-            </select>
+              onValueChange={(reason) => setForm((current) => ({ ...current, reason }))}
+              options={reasons.map((reason) => ({ value: reason, label: labelFor(adjustmentReasonLabels, reason) }))}
+            />
           </Field>
           <Field label={commonText.note}>
             <input

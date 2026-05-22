@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
 
 type Balance = {
@@ -78,11 +79,15 @@ export default function InventoryPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск по товару, SKU, складу или ячейке"
           />
-          <select className={inputClass} value={stockFilter} onChange={(event) => setStockFilter(event.target.value)}>
-            <option value="ALL">Все остатки</option>
-            <option value="AVAILABLE">Есть доступный товар</option>
-            <option value="UNAVAILABLE">Есть недоступный товар</option>
-          </select>
+          <Select
+            value={stockFilter}
+            onValueChange={setStockFilter}
+            options={[
+              { value: "ALL", label: "Все остатки" },
+              { value: "AVAILABLE", label: "Есть доступный товар" },
+              { value: "UNAVAILABLE", label: "Есть недоступный товар" }
+            ]}
+          />
         </div>
       ) : null}
       {!loading && balances.length === 0 ? (

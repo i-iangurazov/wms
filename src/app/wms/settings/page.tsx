@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, dangerButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 
 type SettingsOverview = {
   organization: {
@@ -515,34 +516,20 @@ export default function SettingsPage() {
                       Какие виды складских заданий используются на выбранном складе.
                     </p>
                     <form onSubmit={createTemplate} className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <select
-                        className={inputClass}
+                      <Select
                         value={templateForm.warehouseId}
-                        onChange={(event) =>
-                          setTemplateForm((current) => ({ ...current, warehouseId: event.target.value }))
-                        }
-                        required
-                      >
-                        <option value="">Склад</option>
-                        {activeRuleWarehouses.map((warehouse) => (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.code} - {warehouse.name}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className={inputClass}
+                        onValueChange={(warehouseId) => setTemplateForm((current) => ({ ...current, warehouseId }))}
+                        placeholder="Склад"
+                        options={activeRuleWarehouses.map((warehouse) => ({
+                          value: warehouse.id,
+                          label: `${warehouse.code} - ${warehouse.name}`
+                        }))}
+                      />
+                      <Select
                         value={templateForm.type}
-                        onChange={(event) =>
-                          setTemplateForm((current) => ({ ...current, type: event.target.value }))
-                        }
-                      >
-                        {Object.entries(workTemplateLabels).map(([type, label]) => (
-                          <option key={type} value={type}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                        onValueChange={(type) => setTemplateForm((current) => ({ ...current, type }))}
+                        options={Object.entries(workTemplateLabels).map(([type, label]) => ({ value: type, label }))}
+                      />
                       <input
                         className={inputClass}
                         value={templateForm.name}
@@ -597,44 +584,34 @@ export default function SettingsPage() {
                       Укажите ячейку приёмки, приоритетные ячейки сборки и зоны для размещения или пополнения.
                     </p>
                     <form onSubmit={createDirective} className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <select
-                        className={inputClass}
+                      <Select
                         value={directiveForm.warehouseId}
-                        onChange={(event) =>
+                        onValueChange={(warehouseId) =>
                           setDirectiveForm((current) => ({
                             ...current,
-                            warehouseId: event.target.value,
+                            warehouseId,
                             zoneId: "",
                             locationId: ""
                           }))
                         }
-                        required
-                      >
-                        <option value="">Склад</option>
-                        {activeRuleWarehouses.map((warehouse) => (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.code} - {warehouse.name}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        className={inputClass}
+                        placeholder="Склад"
+                        options={activeRuleWarehouses.map((warehouse) => ({
+                          value: warehouse.id,
+                          label: `${warehouse.code} - ${warehouse.name}`
+                        }))}
+                      />
+                      <Select
                         value={directiveForm.type}
-                        onChange={(event) =>
+                        onValueChange={(type) =>
                           setDirectiveForm((current) => ({
                             ...current,
-                            type: event.target.value,
+                            type,
                             zoneId: "",
                             locationId: ""
                           }))
                         }
-                      >
-                        {Object.entries(directiveLabels).map(([type, label]) => (
-                          <option key={type} value={type}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
+                        options={Object.entries(directiveLabels).map(([type, label]) => ({ value: type, label }))}
+                      />
                       <input
                         className={inputClass}
                         value={directiveForm.name}
@@ -654,37 +631,25 @@ export default function SettingsPage() {
                         placeholder="Приоритет"
                       />
                       {directiveUsesZone ? (
-                        <select
-                          className={inputClass}
+                        <Select
                           value={directiveForm.zoneId}
-                          onChange={(event) =>
-                            setDirectiveForm((current) => ({ ...current, zoneId: event.target.value }))
-                          }
-                          required
-                        >
-                          <option value="">Зона</option>
-                          {availableDirectiveZones.map((zone) => (
-                            <option key={zone.id} value={zone.id}>
-                              {zone.code} - {zone.name}
-                            </option>
-                          ))}
-                        </select>
+                          onValueChange={(zoneId) => setDirectiveForm((current) => ({ ...current, zoneId }))}
+                          placeholder="Зона"
+                          options={availableDirectiveZones.map((zone) => ({
+                            value: zone.id,
+                            label: `${zone.code} - ${zone.name}`
+                          }))}
+                        />
                       ) : (
-                        <select
-                          className={inputClass}
+                        <Select
                           value={directiveForm.locationId}
-                          onChange={(event) =>
-                            setDirectiveForm((current) => ({ ...current, locationId: event.target.value }))
-                          }
-                          required
-                        >
-                          <option value="">Ячейка</option>
-                          {availableDirectiveLocations.map((location) => (
-                            <option key={location.id} value={location.id}>
-                              {location.code}
-                            </option>
-                          ))}
-                        </select>
+                          onValueChange={(locationId) => setDirectiveForm((current) => ({ ...current, locationId }))}
+                          placeholder="Ячейка"
+                          options={availableDirectiveLocations.map((location) => ({
+                            value: location.id,
+                            label: location.code
+                          }))}
+                        />
                       )}
                       <button className={buttonClass} type="submit">
                         Добавить правило
@@ -796,17 +761,11 @@ export default function SettingsPage() {
                   placeholder="email@example.com"
                   type="email"
                 />
-                <select
-                  className={inputClass}
+                <Select
                   value={userForm.role}
-                  onChange={(event) => setUserForm((current) => ({ ...current, role: event.target.value }))}
-                >
-                  {roleOptions.map(([role, label]) => (
-                    <option key={role} value={role}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(role) => setUserForm((current) => ({ ...current, role }))}
+                  options={roleOptions.map(([role, label]) => ({ value: role, label }))}
+                />
                 <input
                   className={inputClass}
                   value={userForm.initialPassword}
@@ -839,17 +798,11 @@ export default function SettingsPage() {
                           <div className="text-xs text-muted">{row.user.email}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <select
-                            className={inputClass}
+                          <Select
                             value={row.role}
-                            onChange={(event) => updateRole(row.id, event.target.value)}
-                          >
-                            {roleOptions.map(([role, label]) => (
-                              <option key={role} value={role}>
-                                {label}
-                              </option>
-                            ))}
-                          </select>
+                            onValueChange={(role) => updateRole(row.id, role)}
+                            options={roleOptions.map(([role, label]) => ({ value: role, label }))}
+                          />
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button className={secondaryButtonClass} type="button" onClick={() => removeUser(row.id)}>

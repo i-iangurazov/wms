@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
 
 type Warehouse = {
@@ -252,19 +253,15 @@ export default function LocationsPage() {
         </div>
         <form onSubmit={createZone} className="grid gap-4 md:grid-cols-4">
           <Field label={commonText.warehouse}>
-            <select
-              className={inputClass}
+            <Select
               value={zoneForm.warehouseId}
-              onChange={(event) => setZoneForm((current) => ({ ...current, warehouseId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.code} - {warehouse.name}
-                </option>
-              ))}
-            </select>
+              onValueChange={(warehouseId) => setZoneForm((current) => ({ ...current, warehouseId }))}
+              placeholder="Выберите склад"
+              options={warehouses.map((warehouse) => ({
+                value: warehouse.id,
+                label: `${warehouse.code} - ${warehouse.name}`
+              }))}
+            />
           </Field>
           <Field label={commonText.code}>
             <input
@@ -312,37 +309,28 @@ export default function LocationsPage() {
       <form onSubmit={saveLocation} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           <Field label={commonText.warehouse}>
-            <select
-              className={inputClass}
+            <Select
               value={form.warehouseId}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, warehouseId: event.target.value, zoneId: "" }))
-              }
-              required
+              onValueChange={(warehouseId) => setForm((current) => ({ ...current, warehouseId, zoneId: "" }))}
+              placeholder="Выберите склад"
               disabled={Boolean(editing)}
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.code} - {warehouse.name}
-                </option>
-              ))}
-            </select>
+              options={warehouses.map((warehouse) => ({
+                value: warehouse.id,
+                label: `${warehouse.code} - ${warehouse.name}`
+              }))}
+            />
           </Field>
           <Field label="Зона">
-            <select
-              className={inputClass}
+            <Select
               value={form.zoneId}
-              onChange={(event) => setForm((current) => ({ ...current, zoneId: event.target.value }))}
+              onValueChange={(zoneId) => setForm((current) => ({ ...current, zoneId }))}
+              emptyLabel="Без зоны"
               disabled={!form.warehouseId}
-            >
-              <option value="">Без зоны</option>
-              {activeZonesForForm.map((zone) => (
-                <option key={zone.id} value={zone.id}>
-                  {zone.code} - {zone.name}
-                </option>
-              ))}
-            </select>
+              options={activeZonesForForm.map((zone) => ({
+                value: zone.id,
+                label: `${zone.code} - ${zone.name}`
+              }))}
+            />
           </Field>
           <Field label={commonText.code}>
             <input
@@ -362,25 +350,21 @@ export default function LocationsPage() {
             />
           </Field>
           <Field label={commonText.type}>
-            <select className={inputClass} value={form.type} onChange={(event) => setType(event.target.value as LocationType)}>
-              {locationTypes.map((type) => (
-                <option key={type} value={type}>
-                  {labelFor(locationTypeLabels, type)}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={form.type}
+              onValueChange={(type) => setType(type as LocationType)}
+              options={locationTypes.map((type) => ({ value: type, label: labelFor(locationTypeLabels, type) }))}
+            />
           </Field>
           <Field label={commonText.status}>
-            <select
-              className={inputClass}
+            <Select
               value={form.status}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, status: event.target.value as FormState["status"] }))
-              }
-            >
-              <option value="ACTIVE">Активно</option>
-              <option value="INACTIVE">Недоступно</option>
-            </select>
+              onValueChange={(status) => setForm((current) => ({ ...current, status: status as FormState["status"] }))}
+              options={[
+                { value: "ACTIVE", label: "Активно" },
+                { value: "INACTIVE", label: "Недоступно" }
+              ]}
+            />
           </Field>
           <div className="flex items-end gap-2">
             <button className={buttonClass} disabled={saving || !form.warehouseId} type="submit">

@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 import { ScanField } from "@/components/wms/ScanField";
@@ -265,36 +266,22 @@ export default function ReceivingPage() {
           <h2 className="mb-4 text-base font-semibold">Новая приёмка</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label={commonText.warehouse}>
-              <select
-                className={inputClass}
+              <Select
                 value={sessionForm.warehouseId}
-                onChange={(event) =>
-                  setSessionForm((current) => ({ ...current, warehouseId: event.target.value, receivingLocationId: "" }))
+                onValueChange={(warehouseId) =>
+                  setSessionForm((current) => ({ ...current, warehouseId, receivingLocationId: "" }))
                 }
-                required
-              >
-                <option value="">Выберите склад</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.code}
-                  </option>
-                ))}
-              </select>
+                placeholder="Выберите склад"
+                options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.code }))}
+              />
             </Field>
             <Field label="Ячейка приёмки">
-              <select
-                className={inputClass}
+              <Select
                 value={sessionForm.receivingLocationId}
-                onChange={(event) => setSessionForm((current) => ({ ...current, receivingLocationId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите ячейку</option>
-                {receivingLocations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.code}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(receivingLocationId) => setSessionForm((current) => ({ ...current, receivingLocationId }))}
+                placeholder="Выберите ячейку"
+                options={receivingLocations.map((location) => ({ value: location.id, label: location.code }))}
+              />
             </Field>
             <Field label={commonText.reference}>
               <input
@@ -322,36 +309,22 @@ export default function ReceivingPage() {
           />
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field label="Приёмка">
-              <select
-                className={inputClass}
+              <Select
                 value={lineForm.sessionId}
-                onChange={(event) => setLineForm((current) => ({ ...current, sessionId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите приёмку</option>
-                {sessions
+                onValueChange={(sessionId) => setLineForm((current) => ({ ...current, sessionId }))}
+                placeholder="Выберите приёмку"
+                options={sessions
                   .filter((session) => session.status === "RECEIVING")
-                  .map((session) => (
-                    <option key={session.id} value={session.id}>
-                      {session.reference ?? session.id.slice(0, 8)}
-                    </option>
-                  ))}
-              </select>
+                  .map((session) => ({ value: session.id, label: session.reference ?? session.id.slice(0, 8) }))}
+              />
             </Field>
             <Field label={commonText.product}>
-              <select
-                className={inputClass}
+              <Select
                 value={lineForm.productId}
-                onChange={(event) => setLineForm((current) => ({ ...current, productId: event.target.value, variantId: "" }))}
-                required
-              >
-                <option value="">Выберите товар</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.sku} - {product.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(productId) => setLineForm((current) => ({ ...current, productId, variantId: "" }))}
+                placeholder="Выберите товар"
+                options={products.map((product) => ({ value: product.id, label: `${product.sku} - ${product.name}` }))}
+              />
             </Field>
             <QuantityStepper
               label="Ожидаемое количество"

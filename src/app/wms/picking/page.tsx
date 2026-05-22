@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 import { ScannerStepLayout } from "@/components/wms/ScannerStepLayout";
@@ -233,35 +234,20 @@ export default function PickingPage() {
             />
           </Field>
           <Field label={commonText.product}>
-            <select
-              className={inputClass}
+            <Select
               value={orderForm.productId}
-              onChange={(event) =>
-                setOrderForm((current) => ({ ...current, productId: event.target.value, variantId: "" }))
-              }
-              required
-            >
-              <option value="">Выберите товар</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.sku}
-                </option>
-              ))}
-            </select>
+              onValueChange={(productId) => setOrderForm((current) => ({ ...current, productId, variantId: "" }))}
+              placeholder="Выберите товар"
+              options={products.map((product) => ({ value: product.id, label: product.sku }))}
+            />
           </Field>
           <Field label="Вариант">
-            <select
-              className={inputClass}
+            <Select
               value={orderForm.variantId}
-              onChange={(event) => setOrderForm((current) => ({ ...current, variantId: event.target.value }))}
-            >
-              <option value="">Основной товар</option>
-              {selectedOrderProduct?.variants.map((variant) => (
-                <option key={variant.id} value={variant.id}>
-                  {variant.sku}
-                </option>
-              ))}
-            </select>
+              onValueChange={(variantId) => setOrderForm((current) => ({ ...current, variantId }))}
+              emptyLabel="Основной товар"
+              options={selectedOrderProduct?.variants.map((variant) => ({ value: variant.id, label: variant.sku })) ?? []}
+            />
           </Field>
           <QuantityStepper
             label={commonText.quantity}
@@ -281,34 +267,23 @@ export default function PickingPage() {
         <h2 className="mb-3 text-base font-semibold">Задание на сборку</h2>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Заказ">
-            <select
-              className={inputClass}
+            <Select
               value={createForm.orderId}
-              onChange={(event) => setCreateForm((current) => ({ ...current, orderId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите заказ</option>
-              {orders.map((order) => (
-                <option key={order.id} value={order.id}>
-                  {order.number} ({labelFor(statusLabels, order.status)})
-                </option>
-              ))}
-            </select>
+              onValueChange={(orderId) => setCreateForm((current) => ({ ...current, orderId }))}
+              placeholder="Выберите заказ"
+              options={orders.map((order) => ({
+                value: order.id,
+                label: `${order.number} (${labelFor(statusLabels, order.status)})`
+              }))}
+            />
           </Field>
           <Field label={commonText.warehouse}>
-            <select
-              className={inputClass}
+            <Select
               value={createForm.warehouseId}
-              onChange={(event) => setCreateForm((current) => ({ ...current, warehouseId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.code}
-                </option>
-              ))}
-            </select>
+              onValueChange={(warehouseId) => setCreateForm((current) => ({ ...current, warehouseId }))}
+              placeholder="Выберите склад"
+              options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.code }))}
+            />
           </Field>
           <div className="flex items-end">
             <button className={buttonClass} type="submit">

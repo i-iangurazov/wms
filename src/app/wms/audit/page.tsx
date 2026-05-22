@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import { auditActionLabels, auditEntityLabels, commonText, emptyStates, labelFor } from "@/lib/wmsText";
 
 type AuditLog = {
@@ -82,14 +83,14 @@ export default function AuditPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск по сотруднику, действию или объекту"
           />
-          <select className={inputClass} value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
-            <option value="ALL">Все действия</option>
-            {Object.entries(auditActionLabels).map(([action, label]) => (
-              <option key={action} value={action}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={actionFilter}
+            onValueChange={setActionFilter}
+            options={[
+              { value: "ALL", label: "Все действия" },
+              ...Object.entries(auditActionLabels).map(([action, label]) => ({ value: action, label }))
+            ]}
+          />
         </div>
       ) : null}
       {!loading && logs.length === 0 ? <EmptyState title={emptyStates.auditTitle} body={emptyStates.auditBody} /> : null}

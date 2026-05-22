@@ -6,6 +6,7 @@ import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { ScannerStepLayout } from "@/components/wms/ScannerStepLayout";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
@@ -151,34 +152,23 @@ export default function CycleCountsPage() {
       <form onSubmit={createSession} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-3">
           <Field label={commonText.warehouse}>
-            <select
-              className={inputClass}
+            <Select
               value={form.warehouseId}
-              onChange={(event) => setForm((current) => ({ ...current, warehouseId: event.target.value, locationId: "" }))}
-              required
-            >
-              <option value="">Выберите склад</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.code}
-                </option>
-              ))}
-            </select>
+              onValueChange={(warehouseId) => setForm((current) => ({ ...current, warehouseId, locationId: "" }))}
+              placeholder="Выберите склад"
+              options={warehouses.map((warehouse) => ({ value: warehouse.id, label: warehouse.code }))}
+            />
           </Field>
           <Field label={commonText.location}>
-            <select
-              className={inputClass}
+            <Select
               value={form.locationId}
-              onChange={(event) => setForm((current) => ({ ...current, locationId: event.target.value }))}
-              required
-            >
-              <option value="">Выберите ячейку</option>
-              {countLocations.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.code} ({labelFor(locationTypeLabels, location.type)})
-                </option>
-              ))}
-            </select>
+              onValueChange={(locationId) => setForm((current) => ({ ...current, locationId }))}
+              placeholder="Выберите ячейку"
+              options={countLocations.map((location) => ({
+                value: location.id,
+                label: `${location.code} (${labelFor(locationTypeLabels, location.type)})`
+              }))}
+            />
           </Field>
           <div className="flex items-end">
             <button className={buttonClass} type="submit">

@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass, inputClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import {
   commonText,
   emptyStates,
@@ -83,14 +84,14 @@ export default function MovementsPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск по товару, ячейке или сотруднику"
           />
-          <select className={inputClass} value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-            <option value="ALL">Все операции</option>
-            {Object.entries(movementTypeLabels).map(([type, label]) => (
-              <option key={type} value={type}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={typeFilter}
+            onValueChange={setTypeFilter}
+            options={[
+              { value: "ALL", label: "Все операции" },
+              ...Object.entries(movementTypeLabels).map(([type, label]) => ({ value: type, label }))
+            ]}
+          />
         </div>
       ) : null}
       {!loading && movements.length === 0 ? (

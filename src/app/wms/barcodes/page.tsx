@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 
 type LabelType = "PRODUCT" | "PRODUCT_VARIANT" | "LOCATION";
 
@@ -144,23 +145,19 @@ export default function BarcodesPage() {
 
       <form onSubmit={createLabel} className={`${cardClass} mb-6 grid gap-4 md:grid-cols-5`}>
         <Field label="Тип">
-          <select className={inputClass} value={type} onChange={(event) => setType(event.target.value as LabelType)}>
-            {labelTypes.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={type}
+            onValueChange={(nextType) => setType(nextType as LabelType)}
+            options={labelTypes}
+          />
         </Field>
         <Field label="Объект">
-          <select className={inputClass} value={targetId} onChange={(event) => setTargetId(event.target.value)}>
-            <option value="">Выберите</option>
-            {targetOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={targetId}
+            onValueChange={setTargetId}
+            placeholder="Выберите"
+            options={targetOptions.map((option) => ({ value: option.id, label: option.label }))}
+          />
         </Field>
         <Field label="Код">
           <input className={inputClass} value={code} onChange={(event) => setCode(event.target.value)} placeholder="SCAN-001" />

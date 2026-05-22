@@ -6,6 +6,7 @@ import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackSta
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { ScanField } from "@/components/wms/ScanField";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 
@@ -218,108 +219,74 @@ export default function ReplenishmentPage() {
             <h2 className="text-base font-semibold">Правило пополнения</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <Field label="Склад">
-                <select
-                  className={inputClass}
+                <Select
                   value={ruleForm.warehouseId}
-                  onChange={(event) =>
+                  onValueChange={(warehouseId) =>
                     setRuleForm((current) => ({
                       ...current,
-                      warehouseId: event.target.value,
+                      warehouseId,
                       pickLocationId: "",
                       sourceLocationId: "",
                       sourceZoneId: ""
                     }))
                   }
-                  required
-                >
-                  <option value="">Выберите склад</option>
-                  {data.warehouses.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.code} - {warehouse.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Выберите склад"
+                  options={data.warehouses.map((warehouse) => ({
+                    value: warehouse.id,
+                    label: `${warehouse.code} - ${warehouse.name}`
+                  }))}
+                />
               </Field>
               <Field label="Товар">
-                <select
-                  className={inputClass}
+                <Select
                   value={ruleForm.productId}
-                  onChange={(event) => setRuleForm((current) => ({ ...current, productId: event.target.value }))}
-                  required
-                >
-                  <option value="">Выберите товар</option>
-                  {data.products.map((product) => (
-                    <option key={product.id} value={product.id}>
-                      {product.sku} - {product.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(productId) => setRuleForm((current) => ({ ...current, productId }))}
+                  placeholder="Выберите товар"
+                  options={data.products.map((product) => ({ value: product.id, label: `${product.sku} - ${product.name}` }))}
+                />
               </Field>
               <Field label="Ячейка сборки">
-                <select
-                  className={inputClass}
+                <Select
                   value={ruleForm.pickLocationId}
-                  onChange={(event) => setRuleForm((current) => ({ ...current, pickLocationId: event.target.value }))}
-                  required
-                >
-                  <option value="">Выберите ячейку</option>
-                  {pickLocations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.code}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(pickLocationId) => setRuleForm((current) => ({ ...current, pickLocationId }))}
+                  placeholder="Выберите ячейку"
+                  options={pickLocations.map((location) => ({ value: location.id, label: location.code }))}
+                />
               </Field>
               <Field label="Источник">
-                <select
-                  className={inputClass}
+                <Select
                   value={ruleForm.sourceMode}
-                  onChange={(event) =>
+                  onValueChange={(sourceMode) =>
                     setRuleForm((current) => ({
                       ...current,
-                      sourceMode: event.target.value,
+                      sourceMode,
                       sourceLocationId: "",
                       sourceZoneId: ""
                     }))
                   }
-                >
-                  <option value="LOCATION">Ячейка</option>
-                  <option value="ZONE">Зона</option>
-                </select>
+                  options={[
+                    { value: "LOCATION", label: "Ячейка" },
+                    { value: "ZONE", label: "Зона" }
+                  ]}
+                />
               </Field>
               {ruleForm.sourceMode === "LOCATION" ? (
                 <Field label="Ячейка-источник">
-                  <select
-                    className={inputClass}
+                  <Select
                     value={ruleForm.sourceLocationId}
-                    onChange={(event) =>
-                      setRuleForm((current) => ({ ...current, sourceLocationId: event.target.value }))
-                    }
-                    required
-                  >
-                    <option value="">Выберите ячейку</option>
-                    {sourceLocations.map((location) => (
-                      <option key={location.id} value={location.id}>
-                        {location.code}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(sourceLocationId) => setRuleForm((current) => ({ ...current, sourceLocationId }))}
+                    placeholder="Выберите ячейку"
+                    options={sourceLocations.map((location) => ({ value: location.id, label: location.code }))}
+                  />
                 </Field>
               ) : (
                 <Field label="Зона-источник">
-                  <select
-                    className={inputClass}
+                  <Select
                     value={ruleForm.sourceZoneId}
-                    onChange={(event) => setRuleForm((current) => ({ ...current, sourceZoneId: event.target.value }))}
-                    required
-                  >
-                    <option value="">Выберите зону</option>
-                    {sourceZones.map((zone) => (
-                      <option key={zone.id} value={zone.id}>
-                        {zone.code} - {zone.name}
-                      </option>
-                    ))}
-                  </select>
+                    onValueChange={(sourceZoneId) => setRuleForm((current) => ({ ...current, sourceZoneId }))}
+                    placeholder="Выберите зону"
+                    options={sourceZones.map((zone) => ({ value: zone.id, label: `${zone.code} - ${zone.name}` }))}
+                  />
                 </Field>
               )}
               <Field label="Минимум">

@@ -3,9 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 import { ScanField } from "@/components/wms/ScanField";
 
@@ -149,34 +150,23 @@ export default function PackingPage() {
             <h2 className="text-base font-semibold">Создать упаковку</h2>
             <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
               <Field label="Собранный заказ">
-                <select
-                  className={inputClass}
+                <Select
                   value={createForm.orderId}
-                  onChange={(event) => setCreateForm((current) => ({ ...current, orderId: event.target.value }))}
-                  required
-                >
-                  <option value="">Выберите заказ</option>
-                  {pickedOrders.map((order) => (
-                    <option key={order.id} value={order.id}>
-                      {order.number}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(orderId) => setCreateForm((current) => ({ ...current, orderId }))}
+                  placeholder="Выберите заказ"
+                  options={pickedOrders.map((order) => ({ value: order.id, label: order.number }))}
+                />
               </Field>
               <Field label="Склад">
-                <select
-                  className={inputClass}
+                <Select
                   value={createForm.warehouseId}
-                  onChange={(event) => setCreateForm((current) => ({ ...current, warehouseId: event.target.value }))}
-                  required
-                >
-                  <option value="">Выберите склад</option>
-                  {data.warehouses.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.code} - {warehouse.name}
-                    </option>
-                  ))}
-                </select>
+                  onValueChange={(warehouseId) => setCreateForm((current) => ({ ...current, warehouseId }))}
+                  placeholder="Выберите склад"
+                  options={data.warehouses.map((warehouse) => ({
+                    value: warehouse.id,
+                    label: `${warehouse.code} - ${warehouse.name}`
+                  }))}
+                />
               </Field>
               <div className="flex items-end">
                 <button className={buttonClass} type="submit">

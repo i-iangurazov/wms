@@ -2,8 +2,9 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, cardClass, Field, ghostButtonClass, inputClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, ghostButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
 import { ScanField } from "@/components/wms/ScanField";
@@ -278,49 +279,31 @@ export default function PutAwayPage() {
           />
           <div className="mt-4 grid gap-4">
             <Field label="Откуда">
-              <select
-                className={inputClass}
+              <Select
                 value={form.fromLocationId}
-                onChange={(event) => setForm((current) => ({ ...current, fromLocationId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите ячейку приёмки</option>
-                {receivingLocations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.code}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(fromLocationId) => setForm((current) => ({ ...current, fromLocationId }))}
+                placeholder="Выберите ячейку приёмки"
+                options={receivingLocations.map((location) => ({ value: location.id, label: location.code }))}
+              />
             </Field>
             <Field label={commonText.product}>
-              <select
-                className={inputClass}
+              <Select
                 value={form.productId}
-                onChange={(event) => setForm((current) => ({ ...current, productId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите товар</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.sku} - {product.name}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(productId) => setForm((current) => ({ ...current, productId }))}
+                placeholder="Выберите товар"
+                options={products.map((product) => ({ value: product.id, label: `${product.sku} - ${product.name}` }))}
+              />
             </Field>
             <Field label="Куда">
-              <select
-                className={inputClass}
+              <Select
                 value={form.toLocationId}
-                onChange={(event) => setForm((current) => ({ ...current, toLocationId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите ячейку</option>
-                {destinations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.code} ({labelFor(locationTypeLabels, location.type)})
-                  </option>
-                ))}
-              </select>
+                onValueChange={(toLocationId) => setForm((current) => ({ ...current, toLocationId }))}
+                placeholder="Выберите ячейку"
+                options={destinations.map((location) => ({
+                  value: location.id,
+                  label: `${location.code} (${labelFor(locationTypeLabels, location.type)})`
+                }))}
+              />
             </Field>
             <QuantityStepper
               label={commonText.quantity}

@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, dangerButtonClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
+import { Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
@@ -285,19 +286,12 @@ export default function ProductsPage() {
           </div>
           <div className="grid gap-3 md:grid-cols-4">
             <Field label={commonText.product}>
-              <select
-                className={inputClass}
+              <Select
                 value={variantForm.productId}
-                onChange={(event) => setVariantForm((current) => ({ ...current, productId: event.target.value }))}
-                required
-              >
-                <option value="">Выберите товар</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.sku}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(productId) => setVariantForm((current) => ({ ...current, productId }))}
+                placeholder="Выберите товар"
+                options={products.map((product) => ({ value: product.id, label: product.sku }))}
+              />
             </Field>
             <Field label="SKU">
               <input

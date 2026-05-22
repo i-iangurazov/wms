@@ -1203,3 +1203,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: the dashboard now answers what requires action now. E2E still needs more click-through scanner coverage before product UI hardening can be considered done.
 - Architecture review: workflow stock changes in E2E still go through existing API/services and therefore through `StockMovementService`; the UI phase itself did not alter stock logic.
 - Remaining risk: Playwright tests require seeded admin credentials and a reachable local database. The new E2E is meaningful but still not a substitute for full mobile scanner workflow tests.
+
+#### Phase 41: Active WMS Select Migration
+
+- Status: implemented and validated.
+- What changed: migrated all active WMS native `<select>` controls to the shared Radix `Select` primitive, including receiving, put-away, transfers, picking, packing, cycle counts, adjustments, replenishment, warehouses/locations, products, barcodes, inventory, movements, audit, and settings. Added empty-value support to the shared Select for filters and optional variant/zone fields.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and a sequential `pnpm test:e2e` passed. An earlier parallel run of `pnpm ui:smoke` and `pnpm test:e2e` caused transient Next dev host/cache contention and was discarded.
+- UX review: select arrows, padding, trigger height, focus states, and dropdown panels are now consistent across active WMS screens.
+- Architecture review: UI-only change; stock logic, tenant isolation, permissions, and audit behavior are unchanged.
+- Remaining risk: large forms still need better grouping/tabs and some worker screens still need true handheld step-by-step click-through redesign.

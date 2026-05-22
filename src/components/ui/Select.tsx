@@ -14,6 +14,7 @@ export function Select({
   onValueChange,
   options,
   placeholder = "Выберите",
+  emptyLabel,
   disabled = false,
   error,
   className = ""
@@ -22,12 +23,20 @@ export function Select({
   onValueChange: (value: string) => void;
   options: SelectOption[];
   placeholder?: string;
+  emptyLabel?: string;
   disabled?: boolean;
   error?: string | null;
   className?: string;
 }) {
+  const emptyValue = "__wms_empty__";
+  const selectOptions = emptyLabel ? [{ value: emptyValue, label: emptyLabel }, ...options] : options;
+
   return (
-    <RadixSelect.Root value={value || undefined} onValueChange={onValueChange} disabled={disabled}>
+    <RadixSelect.Root
+      value={value || (emptyLabel ? emptyValue : undefined)}
+      onValueChange={(nextValue) => onValueChange(nextValue === emptyValue ? "" : nextValue)}
+      disabled={disabled}
+    >
       <RadixSelect.Trigger
         data-testid="wms-select-trigger"
         className={[
@@ -49,7 +58,7 @@ export function Select({
           className="z-50 max-h-80 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-border bg-white shadow-lg"
         >
           <RadixSelect.Viewport className="p-1">
-            {options.map((option) => (
+            {selectOptions.map((option) => (
               <RadixSelect.Item
                 key={option.value}
                 value={option.value}
