@@ -1248,3 +1248,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - Architecture review: services remain authoritative for business rules; schema validation is an input layer and does not bypass stock, permission, tenant, or audit rules.
 - Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
 - Remaining risk: location, receiving, transfer, adjustment, cycle count, picking, users, and settings forms still need migration to React Hook Form/Zod/React Query. Playwright remains foundation-level for scanner workflows.
+
+#### Phase 46: WMS Tooling Strategy And Scanner/Label Integration
+
+- Status: implemented and validated.
+- What changed: added `docs/wms-tooling-and-library-strategy.md`; selected and installed `@zxing/browser`, `bwip-js`, `exceljs`, and `pino`; added camera barcode scanning to the shared scanner field; added Code 128/QR SVG rendering with `bwip-js`; added barcode previews and printable label sheets to `/wms/barcodes`; added ExcelJS product import template download; replaced unexpected API `console.error` with structured Pino logging.
+- UX review: scanner fields now support hardware keyboard scanners, manual input, and camera fallback. Barcode labels are no longer just CSV records; users can preview and print physical labels.
+- Architecture review: scanner/label tooling does not mutate stock. Product template generation is permission protected. Pino is system logging only and remains separate from audit logs.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
+- Remaining risk: camera scanning needs real-device warehouse testing; browser print is an MVP label strategy, not a guaranteed calibrated PDF label system.

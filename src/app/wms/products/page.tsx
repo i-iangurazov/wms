@@ -328,7 +328,12 @@ export default function ProductsPage() {
         className={`${cardClass} mb-6`}
       >
         <div className="mb-3">
-          <h2 className="text-base font-semibold">Импорт товаров</h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="text-base font-semibold">Импорт товаров</h2>
+            <a className={secondaryButtonClass} href="/api/products/import/template">
+              Скачать шаблон XLSX
+            </a>
+          </div>
           <p className="text-sm text-muted">
             Поддерживаются CSV и XLSX. Колонки: sku, name, barcode, barcodes, variant_sku, variant_name,
             variant_barcode, variant_barcodes.

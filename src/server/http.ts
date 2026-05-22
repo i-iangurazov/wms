@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { AppError } from "@/server/errors";
+import { logger } from "@/server/logger";
 
 const russianErrorMessages: Record<string, string> = {
   "Invalid user or store context.": "Не удалось определить пользователя или организацию.",
@@ -215,7 +216,7 @@ export function jsonError(error: unknown) {
   if (error instanceof AppError) {
     return NextResponse.json({ error: publicErrorMessage(error.message) }, { status: error.status });
   }
-  console.error(error);
+  logger.error({ err: error }, "Unhandled API error");
   return NextResponse.json({ error: "Внутренняя ошибка сервера." }, { status: 500 });
 }
 

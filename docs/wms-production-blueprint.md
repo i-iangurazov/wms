@@ -1053,6 +1053,13 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select across active pages, Radix Tooltip, React Query provider, Sonner toaster, shared Zod schemas, Hook Form/Zod product and warehouse forms, CSV/XLSX import preview, Russian date formatting, a shared responsive TanStack `DataTable`, compact `ActionMenu` for crowded admin row actions, dashboard redesign, and E2E harness are implemented and validated. Active page migration is no longer blocked by raw selects or page-local tables, but dedicated worker cards, full workflow form migration, dialogs, and full click-through scanner E2E remain incomplete.
 - Last validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed after the library-stack adoption pass.
 
+### Phase T1: WMS Tooling Stack Alignment
+
+- Goal: stop hand-building scanner, label, import-template, and logging primitives where mature libraries reduce risk.
+- Tasks: document tooling strategy; adopt `@zxing/browser`, `bwip-js`, `exceljs`, and `pino`; wire camera scanning into shared scanner fields; render printable barcode labels; generate import templates; keep custom business rules in services.
+- Validation: typecheck, lint, unit tests, DB smoke, build, UI smoke, Playwright E2E.
+- Status: PARTIAL. Strategy doc exists and selected tools are integrated in active scanner/label/import/logging paths. Remaining work is real-device camera testing, PDF/calibrated label output if browser print is insufficient, and workflow-specific scanner E2E.
+
 ### Phase O1: Production Operations
 
 - Goal: deployable production pilot.

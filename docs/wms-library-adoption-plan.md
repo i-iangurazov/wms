@@ -17,6 +17,10 @@ The standalone WMS no longer has an empty dependency surface, but library adopti
 | Notifications | Inline success/error messages only. | `sonner` | Russian toast feedback for successful and failed operations. | Root `Toaster`, product/warehouse mutations. | PARTIAL |
 | Dates | Raw `toLocaleString()` varied by browser. | `date-fns` with Russian locale | Consistent Russian-friendly timestamps. | Movement history and audit log. | PARTIAL |
 | Product import | CSV text only, no preview/XLSX. | `papaparse`, `xlsx` | CSV/XLSX parsing, preview, import validation feedback. | Product import UI parses CSV/XLSX, previews rows/columns, sends normalized CSV. | PARTIAL |
+| Import templates | No downloadable import templates. | `exceljs` | Server-side XLSX template generation with headers/examples. | `/api/products/import/template`. | IMPLEMENTED foundation |
+| Camera scanning | Keyboard/manual scanner only. | `@zxing/browser` | Browser camera scanning for mobile fallback. | Shared `CameraBarcodeScanner` inside `ScanField`. | PARTIAL |
+| Label rendering | CSV export only; no real label preview/print. | `bwip-js` | Code 128/QR SVG rendering for product/location labels. | `BarcodeSymbol` and `/wms/barcodes` print sheet. | PARTIAL |
+| Observability | Unexpected errors used `console.error`. | `pino` | Structured JSON logs with redaction. | `src/server/logger.ts`, `jsonError`. | PARTIAL |
 | E2E | Screenshot smoke only. | `@playwright/test` | Browser workflow verification on desktop/mobile. | Login, access, product/warehouse creation, API-backed receive/put-away/transfer/cycle-count/pick/pack checks. | PARTIAL |
 
 ## Shared Components And Files
@@ -47,6 +51,12 @@ The standalone WMS no longer has an empty dependency surface, but library adopti
 - Added Russian date-fns timestamp formatting to movement history and audit logs.
 - Added Radix Tooltip primitive and wired it into navigation icons.
 - Extended shared `DataTable` with sortable headers and pagination support.
+- Added `docs/wms-tooling-and-library-strategy.md`.
+- Added `@zxing/browser`, `bwip-js`, `exceljs`, and `pino`.
+- Added camera barcode scanning to the shared scanner field.
+- Added real barcode SVG rendering and printable label sheets to `/wms/barcodes`.
+- Added an ExcelJS-generated product import XLSX template endpoint.
+- Replaced unexpected API `console.error` logging with structured Pino logs.
 
 ### Next Migration Slices
 

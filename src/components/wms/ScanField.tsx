@@ -1,8 +1,21 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { buttonClass, inputClass } from "@/components/FormControls";
+import { KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { buttonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { commonText } from "@/lib/wmsText";
+
+const CameraBarcodeScanner = dynamic(
+  () => import("@/components/wms/CameraBarcodeScanner").then((mod) => mod.CameraBarcodeScanner),
+  {
+    ssr: false,
+    loading: () => (
+      <button className={`${secondaryButtonClass} h-12 sm:min-w-32`} type="button" disabled>
+        Камера
+      </button>
+    )
+  }
+);
 
 export function ScanField({
   label,
@@ -46,6 +59,15 @@ export function ScanField({
     }
   }
 
+  const submitCameraScan = useCallback(
+    (scan: string) => {
+      onScan(scan);
+      setValue("");
+      inputRef.current?.focus();
+    },
+    [onScan]
+  );
+
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
       <label htmlFor={inputId} className="mb-2 block text-sm font-semibold text-ink">
@@ -75,6 +97,7 @@ export function ScanField({
         <button className={`${buttonClass} h-12 sm:min-w-32`} type="button" onClick={submit}>
           {commonText.scan}
         </button>
+        <CameraBarcodeScanner onScan={submitCameraScan} />
       </div>
     </div>
   );

@@ -6,7 +6,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState, SuccessState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { DataTable, Select } from "@/components/ui";
+import { Button, DataTable, Select } from "@/components/ui";
+import { BarcodeSymbol } from "@/components/wms/BarcodeSymbol";
 
 type LabelType = "PRODUCT" | "PRODUCT_VARIANT" | "LOCATION";
 
@@ -132,24 +133,36 @@ export default function BarcodesPage() {
     await loadData();
   }
 
+  function printLabels() {
+    document.body.classList.add("wms-printing-labels");
+    window.print();
+    window.setTimeout(() => document.body.classList.remove("wms-printing-labels"), 500);
+  }
+
   const columns: ColumnDef<BarcodeLabel, unknown>[] = [
+    {
+      id: "preview",
+      header: "Этикетка",
+      cell: ({ row }) => <BarcodeSymbol value={row.original.code} />,
+      meta: { minWidth: "210px" }
+    },
     {
       id: "code",
       header: "Код",
       cell: ({ row }) => <span className="font-mono text-xs font-semibold">{row.original.code}</span>,
-      meta: { minWidth: "180px" }
+      meta: { minWidth: "180px", sortValue: (row) => row.code }
     },
     {
       id: "type",
       header: "Тип",
       cell: ({ row }) => labelTypes.find((item) => item.value === row.original.type)?.label ?? row.original.type,
-      meta: { minWidth: "150px" }
+      meta: { minWidth: "150px", sortValue: (row) => row.type }
     },
     {
       id: "target",
       header: "Объект",
       cell: ({ row }) => labelTarget(row.original),
-      meta: { minWidth: "260px" }
+      meta: { minWidth: "260px", sortValue: (row) => labelTarget(row) }
     },
     {
       id: "note",
@@ -161,55 +174,87 @@ export default function BarcodesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Штрихкоды"
-        description="Регистрируйте дополнительные штрихкоды для товаров, вариантов и ячеек. Один код не может указывать на разные объекты."
-        action={
-          <a className={secondaryButtonClass} href="/api/barcode-labels?format=csv">
-            Скачать CSV
-          </a>
+      <style jsx global>{`
+        @media print {
+          body.wms-printing-labels {
+            background: white;
+          }
+          body.wms-printing-labels .wms-no-print {
+            display: none !important;
+          }
+          body.wms-printing-labels .wms-print-labels {
+            display: grid !important;
+          }
         }
-      />
+      `}</style>
+      <div className="wms-no-print">
+        <PageHeader
+          title="Штрихкоды"
+          description="Регистрируйте дополнительные штрихкоды для товаров, вариантов и ячеек. Один код не может указывать на разные объекты."
+          action={
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" onClick={printLabels} disabled={labels.length === 0}>
+                Печать этикеток
+              </Button>
+              <a className={secondaryButtonClass} href="/api/barcode-labels?format=csv">
+                Скачать CSV
+              </a>
+            </div>
+          }
+        />
 
-      <form onSubmit={createLabel} className={`${cardClass} mb-6 grid gap-4 md:grid-cols-5`}>
-        <Field label="Тип">
-          <Select
-            value={type}
-            onValueChange={(nextType) => setType(nextType as LabelType)}
-            options={labelTypes}
-          />
-        </Field>
-        <Field label="Объект">
-          <Select
-            value={targetId}
-            onValueChange={setTargetId}
-            placeholder="Выберите"
-            options={targetOptions.map((option) => ({ value: option.id, label: option.label }))}
-          />
-        </Field>
-        <Field label="Код">
-          <input className={inputClass} value={code} onChange={(event) => setCode(event.target.value)} placeholder="SCAN-001" />
-        </Field>
-        <Field label="Примечание">
-          <input className={inputClass} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
-        </Field>
-        <div className="flex items-end">
-          <button className={buttonClass} type="submit" disabled={!targetId || !code}>
-            Создать
-          </button>
-        </div>
-      </form>
+        <form onSubmit={createLabel} className={`${cardClass} mb-6 grid gap-4 md:grid-cols-5`}>
+          <Field label="Тип">
+            <Select
+              value={type}
+              onValueChange={(nextType) => setType(nextType as LabelType)}
+              options={labelTypes}
+            />
+          </Field>
+          <Field label="Объект">
+            <Select
+              value={targetId}
+              onValueChange={setTargetId}
+              placeholder="Выберите"
+              options={targetOptions.map((option) => ({ value: option.id, label: option.label }))}
+            />
+          </Field>
+          <Field label="Код">
+            <input className={inputClass} value={code} onChange={(event) => setCode(event.target.value)} placeholder="SCAN-001" />
+          </Field>
+          <Field label="Примечание">
+            <input className={inputClass} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Необязательно" />
+          </Field>
+          <div className="flex items-end">
+            <button className={buttonClass} type="submit" disabled={!targetId || !code}>
+              Создать
+            </button>
+          </div>
+        </form>
 
-      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
-      {message ? <div className="mb-4"><SuccessState message={message} /></div> : null}
+        {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+        {message ? <div className="mb-4"><SuccessState message={message} /></div> : null}
 
-      {loading ? (
-        <LoadingState message="Загрузка штрихкодов..." />
-      ) : labels.length === 0 ? (
-        <EmptyState title="Штрихкодов пока нет" body="Добавьте первый код для товара или ячейки, чтобы упростить сканирование." />
-      ) : (
-        <DataTable data={labels} columns={columns} getRowId={(row) => row.id} />
-      )}
+        {loading ? (
+          <LoadingState message="Загрузка штрихкодов..." />
+        ) : labels.length === 0 ? (
+          <EmptyState title="Штрихкодов пока нет" body="Добавьте первый код для товара или ячейки, чтобы упростить сканирование." />
+        ) : (
+          <DataTable data={labels} columns={columns} getRowId={(row) => row.id} />
+        )}
+      </div>
+      <div className="wms-print-labels hidden grid-cols-2 gap-4 bg-white p-6 text-ink">
+        {labels.map((label) => (
+          <div key={label.id} className="break-inside-avoid rounded-md border border-slate-300 p-4">
+            <div className="mb-2 text-xs font-semibold uppercase text-slate-500">
+              {labelTypes.find((item) => item.value === label.type)?.label ?? "Штрихкод"}
+            </div>
+            <BarcodeSymbol value={label.code} className="mb-2" />
+            <div className="text-sm font-semibold">{labelTarget(label)}</div>
+            {label.note ? <div className="mt-1 text-xs text-slate-500">{label.note}</div> : null}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
