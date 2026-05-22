@@ -51,6 +51,7 @@ export default function PickingPage() {
   const [pickInputs, setPickInputs] = useState<Record<string, { locationScan: string; productScan: string; quantity: number }>>({});
   const pickKeysRef = useRef<Record<string, string>>({});
   const allocationKeysRef = useRef<Record<string, string>>({});
+  const shortPickKeysRef = useRef<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -162,6 +163,24 @@ export default function PickingPage() {
     } else {
       setMessage("Сборка подтверждена.");
       delete pickKeysRef.current[line.id];
+      await loadData();
+    }
+  }
+
+  async function resolveShortPick(line: WorkLine) {
+    const idempotencyKey = shortPickKeysRef.current[line.id] ?? crypto.randomUUID();
+    shortPickKeysRef.current[line.id] = idempotencyKey;
+    const response = await fetch(`/api/warehouse-work/lines/${line.id}/short-pick`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: "Недосбор подтверждён", idempotencyKey })
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось подтвердить недосбор.");
+    } else {
+      setMessage("Недосбор отправлен на проверку.");
+      delete shortPickKeysRef.current[line.id];
       await loadData();
     }
   }
@@ -356,7 +375,7 @@ export default function PickingPage() {
                         disabled={line.status === "COMPLETED"}
                         onChange={(quantity) => updatePickInput(line, { quantity })}
                       />
-                      <div className="flex items-end">
+                      <div className="flex flex-col justify-end gap-2">
                         <button
                           className={secondaryButtonClass}
                           disabled={line.status === "COMPLETED"}
@@ -365,6 +384,15 @@ export default function PickingPage() {
                         >
                           Подтвердить
                         </button>
+                        {line.status !== "COMPLETED" && remaining > 0 ? (
+                          <button
+                            className={secondaryButtonClass}
+                            type="button"
+                            onClick={() => void resolveShortPick(line)}
+                          >
+                            Недосбор
+                          </button>
+                        ) : null}
                       </div>
                     </div>
                   </div>

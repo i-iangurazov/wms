@@ -1122,3 +1122,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: the picking page now explains that stock is reserved before work starts and that confirmation removes the reserve before stock is picked. The worker still sees a simple scan location/product/quantity flow.
 - Architecture review: picking no longer selects raw balances at work creation. Reservations are the source of executable work, `reservedQty` is released through `StockMovementService`, `PICK` remains append-only, and the DB smoke verifies the movement sequence.
 - Remaining risk: no explicit reservation release on order cancel, no manager short-pick resolution, no browser/mobile E2E, no route-level test for `/api/reservations`, and no dedicated UI showing split-bin reservation details before work creation.
+
+#### Phase 32: Short-Pick Resolution
+
+- Status: implemented at foundation level; exception queue and E2E remain gaps.
+- What changed: added `SHORT_PICKED` order status, migration `20260522094000_short_picked_order_status`, `resolveShortPickLine`, `/api/warehouse-work/lines/[id]/short-pick`, Russian `Недосбор` UI action, audit label, Russian errors, and DB smoke coverage for partial pick, remaining reservation release, short reservation status, and order status.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: managers can mark remaining quantity as `Недосбор` from the picking screen; workers still use the same scan-confirm flow. The UI remains Russian, but role-aware hiding for the manager-only short-pick button is still not implemented client-side.
+- Architecture review: short-pick resolution releases only the remaining reserved quantity through `StockMovementService`, keeps `PICK` movements append-only, marks the reservation `SHORT`, and leaves the order in `SHORT_PICKED` instead of allowing packing.
+- Remaining risk: no dedicated manager exception queue, no backorder/cancel/reallocate resolution, no browser/mobile E2E, and no route-level permission test for short-pick resolution.

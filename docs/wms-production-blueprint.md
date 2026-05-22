@@ -1012,6 +1012,7 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Goal: turn short-pick marker into managed resolution.
 - Tasks: statuses/reasons, release reservation, manager resolution UI, audit.
 - Validation: service/API tests and E2E later.
+- Status: IMPLEMENTED at foundation level. Added `SHORT_PICKED` order status, short-pick resolution API/service, Russian picking action, remaining reservation release through `StockMovementService`, audit event, and DB smoke coverage. Still needs dedicated route tests, manager exception queue, and browser/mobile E2E.
 
 ### Phase P1: Packing Session Model
 

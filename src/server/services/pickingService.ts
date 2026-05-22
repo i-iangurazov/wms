@@ -230,3 +230,98 @@ export async function confirmPickLine(
     return updatedLine;
   });
 }
+
+export async function resolveShortPickLine(
+  context: RequestContext,
+  input: { lineId: string; note?: string | null; idempotencyKey?: string | null }
+) {
+  requirePermission(context.role, "picking.create");
+  return prisma.$transaction(async (tx) => {
+    const line = await tx.warehouseWorkLine.findUnique({
+      where: { id: input.lineId },
+      include: {
+        work: { include: { lines: true, sourceOrder: true } },
+        reservation: true
+      }
+    });
+    if (!line || line.work.storeId !== context.storeId || line.work.type !== "PICK") {
+      throw new AppError("Pick line not found.", 404);
+    }
+    const command = await claimWorkflowCommand(tx, context, {
+      idempotencyKey: input.idempotencyKey,
+      operation: "RELEASE_RESERVATION",
+      payload: {
+        action: "resolveShortPickLine",
+        lineId: input.lineId,
+        note: input.note ?? null
+      }
+    });
+    if (command?.replay) {
+      return line;
+    }
+    if (line.status === "COMPLETED") {
+      throw new AppError("Pick line is already completed.", 409);
+    }
+    const remaining = line.quantity - line.pickedQuantity;
+    if (remaining <= 0) {
+      throw new AppError("No remaining quantity to short pick.", 409);
+    }
+    if (!line.reservation) {
+      throw new AppError("Reservation is required for short pick resolution.", 409);
+    }
+
+    if (line.reservation.status === "RESERVED" || line.reservation.status === "PICKING") {
+      const movement = await applyStockMovementInTransaction(tx, context, {
+        productId: line.productId,
+        variantId: line.variantId,
+        type: "RELEASE_RESERVATION",
+        quantity: remaining,
+        stockStateLocationId: line.sourceLocationId,
+        stockStateDelta: { reservedQty: -remaining },
+        note: input.note,
+        referenceType: "WarehouseWorkLine",
+        referenceId: line.id
+      });
+      await attachWorkflowMovement(tx, command?.commandId, movement.id);
+      await tx.inventoryReservation.update({
+        where: { id: line.reservation.id },
+        data: { status: "SHORT" }
+      });
+    } else {
+      throw new AppError("Reservation is not available for picking.", 409);
+    }
+
+    const updatedLine = await tx.warehouseWorkLine.update({
+      where: { id: line.id },
+      data: {
+        status: "COMPLETED",
+        exceptionReason: "SHORT_PICK_REVIEW",
+        completedAt: new Date()
+      }
+    });
+
+    const siblingStatuses = line.work.lines.map((workLine) =>
+      workLine.id === line.id ? "COMPLETED" : workLine.status
+    );
+    const nextWorkStatus = headerStatusForLineStatuses(siblingStatuses);
+    await tx.warehouseWork.update({
+      where: { id: line.workId },
+      data: {
+        status: nextWorkStatus,
+        completedAt: nextWorkStatus === "COMPLETED" ? new Date() : null
+      }
+    });
+    if (nextWorkStatus === "COMPLETED" && line.work.sourceOrderId) {
+      await tx.customerOrder.update({ where: { id: line.work.sourceOrderId }, data: { status: "SHORT_PICKED" } });
+    }
+    await writeAuditLog(tx, {
+      storeId: context.storeId,
+      userId: context.user.id,
+      action: "warehouse_work_line.short_pick",
+      entityType: "WarehouseWorkLine",
+      entityId: line.id,
+      metadata: { remaining, note: input.note ?? null }
+    });
+    return updatedLine;
+  });
+}

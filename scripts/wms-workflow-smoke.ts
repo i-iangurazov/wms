@@ -27,7 +27,9 @@ async function main() {
   );
   const { createCustomerOrder } = await import("@/server/services/orderService");
   const { allocateOrderStock, releaseOrderReservations } = await import("@/server/services/reservationService");
-  const { confirmPickLine, createPickWorkFromOrder } = await import("@/server/services/pickingService");
+  const { confirmPickLine, createPickWorkFromOrder, resolveShortPickLine } = await import(
+    "@/server/services/pickingService"
+  );
   const { availableQuantity, variantKey } = await import("@/server/services/stockMovementEngine");
   const { listAuditLogs } = await import("@/server/services/auditService");
   const { addStoreUser, listStoreUsers, removeStoreUser, updateStoreUserRole } = await import(
@@ -367,10 +369,40 @@ async function main() {
     await submitCycleCount(context, count.id);
     await approveCycleCount(context, count.id);
 
+    const shortOrder = await createCustomerOrder(context, {
+      number: `SHORT-${suffix}`,
+      productId: product.id,
+      quantity: 2
+    });
+    await allocateOrderStock(context, {
+      orderId: shortOrder.id,
+      warehouseId: warehouse.id,
+      idempotencyKey: `allocate-short-${suffix}`
+    });
+    const shortWork = await createPickWorkFromOrder(context, { orderId: shortOrder.id, warehouseId: warehouse.id });
+    const shortLine = await prisma.warehouseWorkLine.findFirstOrThrow({
+      where: { workId: shortWork.id },
+      include: { sourceLocation: true, product: true }
+    });
+    await confirmPickLine(context, {
+      lineId: shortLine.id,
+      locationScan: shortLine.sourceLocation.code,
+      productScan: shortLine.product.sku,
+      quantity: 1,
+      idempotencyKey: `short-pick-${suffix}`
+    });
+    await resolveShortPickLine(context, {
+      lineId: shortLine.id,
+      note: "Integration short pick",
+      idempotencyKey: `short-resolve-${suffix}`
+    });
+    const shortPickedOrder = await prisma.customerOrder.findUniqueOrThrow({ where: { id: shortOrder.id } });
+    assert.equal(shortPickedOrder.status, "SHORT_PICKED");
+
     const order = await createCustomerOrder(context, {
       number: `ORDER-${suffix}`,
       productId: product.id,
-      quantity: 4
+      quantity: 3
     });
     await allocateOrderStock(context, {
       orderId: order.id,
@@ -392,14 +424,14 @@ async function main() {
       lineId: pickLine.id,
       locationScan: pickLine.sourceLocation.code,
       productScan: pickLine.product.sku,
-      quantity: 4,
+      quantity: 3,
       idempotencyKey: pickIdempotencyKey
     });
     await confirmPickLine(context, {
       lineId: pickLine.id,
       locationScan: pickLine.sourceLocation.code,
       productScan: pickLine.product.sku,
-      quantity: 4,
+      quantity: 3,
       idempotencyKey: pickIdempotencyKey
     });
     await assert.rejects(
@@ -408,7 +440,7 @@ async function main() {
           lineId: pickLine.id,
           locationScan: pickLine.sourceLocation.code,
           productScan: pickLine.product.sku,
-          quantity: 3,
+          quantity: 2,
           idempotencyKey: pickIdempotencyKey
         }),
       /different stock command/
@@ -491,6 +523,10 @@ async function main() {
         "RESERVE",
         "RELEASE_RESERVATION",
         "CYCLE_COUNT_CORRECTION",
+        "RESERVE",
+        "RELEASE_RESERVATION",
+        "PICK",
+        "RELEASE_RESERVATION",
         "RESERVE",
         "RELEASE_RESERVATION",
         "PICK",

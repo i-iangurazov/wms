@@ -179,6 +179,8 @@ const russianErrorMessages: Record<string, string> = {
   "No pickable stock location can satisfy an order line.": "Нет подходящей ячейки сборки с нужным товаром.",
   "Pick line not found.": "Шаг сборки не найден.",
   "Pick line is already completed.": "Этот шаг сборки уже завершён.",
+  "No remaining quantity to short pick.": "В строке не осталось количества для недосбора.",
+  "Reservation is required for short pick resolution.": "Для недосбора нужен резерв по строке.",
   "Warehouse work not found.": "Складское задание не найдено."
 };
 
