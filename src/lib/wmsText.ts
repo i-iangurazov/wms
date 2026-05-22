@@ -2,7 +2,7 @@ import type { PermissionKey } from "@/lib/permissionModel";
 
 export const wmsNavItems = [
   { href: "/wms", label: "Обзор", permission: "wms.view" },
-  { href: "/wms/tasks", label: "Задачи", permission: "wms.view" },
+  { href: "/wms/tasks", label: "Задачи", permission: "receiving.execute" },
   { href: "/wms/stock", label: "Товары и остатки", permission: "wms.view" },
   { href: "/wms/receiving", label: "Приёмка", permission: "receiving.execute" },
   { href: "/wms/fulfillment", label: "Сборка и упаковка", permission: "picking.execute" },

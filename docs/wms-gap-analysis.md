@@ -1095,3 +1095,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
 - UX review: main navigation is now workflow-first and Russian: `Обзор`, `Задачи`, `Товары и остатки`, `Приёмка`, `Сборка и упаковка`, `Инвентаризация`, `Пополнение`, `Склады`, `Журнал`, `Настройки`. Technical pages remain as deep links under the hubs.
 - Remaining risk: hub pages are not a substitute for a real task-center API; route/API/E2E tests still need to prove workflow execution from the redesigned navigation.
+
+#### Phase 29: Real Task Center API
+
+- Status: implemented as an operational aggregation layer; still needs browser/mobile E2E coverage.
+- What changed: added `TaskCenterService`, `/api/tasks`, and a dynamic Russian `/wms/tasks` page that aggregates open receiving sessions, put-away work, replenishment work, manual transfers, picking work, packing work, and active cycle counts. The route is now hidden from `VIEWER` and requires an operational permission instead of plain read access.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: warehouse workers now start from an actionable Russian task list with status, next action, location/product context, loading state, empty states, and access-denied behavior inherited from route protection.
+- Architecture review: the service is read-only, tenant-scoped by `storeId`, permission-gated server-side, and filters worker-visible warehouse work to unassigned or self-assigned work.
+- Remaining risk: the task center does not yet support assignment changes, priority sorting beyond updated time, exception queues, or browser/mobile E2E proof of executing a task from the new screen.

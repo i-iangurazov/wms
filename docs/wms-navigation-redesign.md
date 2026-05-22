@@ -42,6 +42,6 @@ Managers should use:
 ## Implementation Status
 
 - `IMPLEMENTED`: primary navigation is consolidated into the target workflow hubs.
+- `IMPLEMENTED`: `/wms/tasks` now loads a real task-center API for open receiving, put-away, replenishment, transfer, picking, packing, and cycle-count work.
 - `PARTIAL`: deep technical pages still exist and remain accessible.
-- `GAP`: `Задачи` needs a real task-center API and actionable queue, not only links.
 - `GAP`: browser/mobile E2E must prove workers can complete flows from the new navigation.

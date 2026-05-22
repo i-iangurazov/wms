@@ -858,6 +858,7 @@ Each workflow must be implemented through UI and API, tenant-scoped, permission-
 | Products | `ProductService` | products/variants | list/create/update/deactivate | mutations tx | n/a | `products.manage` | product events | `/api/products` | unit/smoke PARTIAL | PARTIAL |
 | Import | `ProductImportService` | CSV import | parse/import | import tx | GAP | `products.manage` | import | `/api/products/import` | unit PARTIAL | PARTIAL |
 | Barcode | `BarcodeService`, `BarcodeLabelService` | scan resolution, label registry | resolve, list/create/export | create tx | duplicate reject | `wms.view`, `barcodes.manage` | label create | `/api/barcode*` | unit PARTIAL | PARTIAL |
+| Task center | `TaskCenterService` | aggregate actionable warehouse work | `getTaskCenter` | read-only | n/a | operational permissions | none | `/api/tasks` | unit PARTIAL | PARTIAL |
 | Stock | `StockMovementService` | only balance mutator and ledger writer | apply, list balances/movements | all mutations tx | stock command | movement-specific | movement create | inventory routes, workflow services | unit/smoke IMPLEMENTED | IMPLEMENTED for current movements |
 | Receiving | `ReceivingService` | receive sessions/lines | list/create/add/receive/complete | mutations tx | receive command | `receiving.execute` | receiving events | `/api/receiving/*` | rules/smoke PARTIAL | PARTIAL |
 | Put-away | `PutawayService` | manual/generated put-away | list/generate/confirm/manual | mutations tx | PARTIAL | `putaway.execute` | work/line movement | `/api/put-away` | smoke PARTIAL | PARTIAL |

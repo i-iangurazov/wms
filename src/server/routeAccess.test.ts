@@ -11,9 +11,9 @@ describe("WMS route access matrix", () => {
   it("hides operational and admin routes from viewers", () => {
     const viewerRoutes = visibleWmsNavItems("VIEWER").map((item) => item.href);
     expect(viewerRoutes).toContain("/wms");
-    expect(viewerRoutes).toContain("/wms/tasks");
     expect(viewerRoutes).toContain("/wms/stock");
     expect(viewerRoutes).toContain("/wms/journal");
+    expect(viewerRoutes).not.toContain("/wms/tasks");
     expect(viewerRoutes).not.toContain("/wms/receiving");
     expect(viewerRoutes).not.toContain("/wms/settings");
   });
@@ -46,6 +46,7 @@ describe("WMS route access matrix", () => {
     expect(canRoleAccessWmsPath("VIEWER", "/wms/inventory")).toBe(true);
     expect(canRoleAccessWmsPath("VIEWER", "/wms/stock")).toBe(true);
     expect(canRoleAccessWmsPath("VIEWER", "/wms/journal")).toBe(true);
+    expect(canRoleAccessWmsPath("VIEWER", "/wms/tasks")).toBe(false);
     expect(canRoleAccessWmsPath("VIEWER", "/wms/receiving")).toBe(false);
     expect(canRoleAccessWmsPath("VIEWER", "/wms/transfers")).toBe(false);
     expect(canRoleAccessWmsPath("ADMIN", "/wms/settings")).toBe(true);
