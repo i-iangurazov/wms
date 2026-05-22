@@ -1167,3 +1167,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: active WMS screens are now much less browser-default/scaffold-like and use consistent Russian feedback states. The main remaining UI blocker is not shared primitives anymore; it is visual/mobile QA and reducing density in the largest admin/worker tables.
 - Architecture review: UI-only changes; no stock mutation, ledger, auth, permission, or tenant-isolation behavior changed.
 - Remaining risk: no automated browser/mobile visual test yet, and the settings/products screens remain dense despite using consistent primitives.
+
+#### Phase 37: UI Design Contract Tests
+
+- Status: implemented as local regression coverage; browser/mobile visual testing remains a gap.
+- What changed: added `src/app/wms/uiDesignContracts.test.ts` to enforce shared `PageHeader` usage, block removed scaffold classes, and require shared loading/error/workflow feedback primitives on active WMS pages.
+- Validation: focused `pnpm test src/app/wms/uiDesignContracts.test.ts`, `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: the test does not judge aesthetics, but it prevents the most obvious regression back to raw scaffold styling.
+- Architecture review: test-only change; stock, ledger, permissions, auth, and tenant isolation are unchanged.
+- Remaining risk: no Playwright/browser/mobile visual smoke yet because no E2E stack is installed in the repo.

@@ -56,7 +56,8 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
 | Mobile scanner UI | Functional but not visually strong enough. | Improve scanner components first. | P0 | PARTIAL |
-| E2E visual coverage | None. | Document as gap; add later Playwright visual smoke. | P2 | GAP |
+| E2E visual coverage | No browser/mobile runner is installed. | Document as gap; add later Playwright visual smoke. | P2 | GAP |
+| UI regression contract | No guard against reintroducing scaffold classes. | Active pages should stay on shared primitives. | P1 | IMPLEMENTED |
 
 ## Phase Tracking
 
@@ -87,3 +88,9 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 - Status: PARTIAL.
 - Acceptance: products, warehouses, locations, settings, tasks, transfers, adjustments, and reconciliation use shared feedback/card/table/action primitives.
 - Progress: active setup and utility screens now use shared card/table/loading/error primitives. Remaining work: split the largest settings/products sections into smaller UI modules, add browser/mobile smoke coverage, and complete visual review.
+
+### UI Phase 6: UI Contract Tests
+
+- Status: IMPLEMENTED as local guard coverage.
+- Acceptance: a fast Vitest contract prevents active WMS pages from reintroducing removed scaffold classes and requires shared page headers/loading/error patterns.
+- Remaining gap: this is not browser/mobile visual E2E. Playwright or an equivalent browser harness is still required before production UI sign-off.
