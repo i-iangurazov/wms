@@ -56,7 +56,7 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
 | Mobile scanner UI | Functional but not visually strong enough. | Improve scanner components first. | P0 | PARTIAL |
-| E2E visual coverage | No browser/mobile runner is installed. | Document as gap; add later Playwright visual smoke. | P2 | GAP |
+| E2E visual coverage | No Playwright runner is installed; a local Chrome screenshot smoke exists. | Keep no-dependency smoke for core pages; add full Playwright workflow E2E later. | P2 | PARTIAL |
 | UI regression contract | No guard against reintroducing scaffold classes. | Active pages should stay on shared primitives. | P1 | IMPLEMENTED |
 
 ## Phase Tracking
@@ -94,3 +94,9 @@ The current UI is functionally broad but visually uneven. Most screens reuse a s
 - Status: IMPLEMENTED as local guard coverage.
 - Acceptance: a fast Vitest contract prevents active WMS pages from reintroducing removed scaffold classes and requires shared page headers/loading/error patterns.
 - Remaining gap: this is not browser/mobile visual E2E. Playwright or an equivalent browser harness is still required before production UI sign-off.
+
+### UI Phase 7: Browser Smoke Harness
+
+- Status: IMPLEMENTED as no-dependency screenshot smoke.
+- Acceptance: `pnpm ui:smoke` starts Next with safe dev auth fallback and captures desktop/mobile screenshots for login, overview, tasks, receiving, picking, and settings.
+- Remaining gap: this is visual render smoke, not full click-through E2E for warehouse workflows.

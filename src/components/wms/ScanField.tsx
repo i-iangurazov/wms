@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { buttonClass, inputClass } from "@/components/FormControls";
 import { commonText } from "@/lib/wmsText";
 
@@ -21,13 +21,14 @@ export function ScanField({
   const hintId = `${inputId}-hint`;
 
   useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
+    const canFocusWithoutKeyboard =
+      typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches;
+    if (autoFocus && canFocusWithoutKeyboard) {
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, [autoFocus]);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit() {
     const scan = value.trim();
     if (!scan) {
       inputRef.current?.focus();
@@ -38,8 +39,15 @@ export function ScanField({
     inputRef.current?.focus();
   }
 
+  function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submit();
+    }
+  }
+
   return (
-    <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-4">
+    <div className="rounded-lg border border-border bg-surface p-4">
       <label htmlFor={inputId} className="mb-2 block text-sm font-semibold text-ink">
         {label}
       </label>
@@ -53,6 +61,7 @@ export function ScanField({
           className={`${inputClass} h-12 text-base`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
+          onKeyDown={submitOnEnter}
           placeholder={placeholder}
           aria-describedby={hintId}
           autoComplete="off"
@@ -63,10 +72,10 @@ export function ScanField({
           spellCheck={false}
           type="text"
         />
-        <button className={`${buttonClass} h-12 sm:min-w-32`} type="submit">
+        <button className={`${buttonClass} h-12 sm:min-w-32`} type="button" onClick={submit}>
           {commonText.scan}
         </button>
       </div>
-    </form>
+    </div>
   );
 }

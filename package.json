@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:db": "tsx scripts/wms-workflow-smoke.ts",
+    "ui:smoke": "node scripts/wms-ui-smoke.mjs",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f postgres",

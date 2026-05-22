@@ -1176,3 +1176,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: the test does not judge aesthetics, but it prevents the most obvious regression back to raw scaffold styling.
 - Architecture review: test-only change; stock, ledger, permissions, auth, and tenant isolation are unchanged.
 - Remaining risk: no Playwright/browser/mobile visual smoke yet because no E2E stack is installed in the repo.
+
+#### Phase 38: Browser UI Smoke Harness And Scanner Form Fix
+
+- Status: implemented as no-dependency browser smoke; full Playwright workflow E2E remains a gap.
+- What changed: added `pnpm ui:smoke` and `scripts/wms-ui-smoke.mjs`, which starts Next with safe dev auth fallback and captures desktop/mobile screenshots for representative WMS pages using headless Chrome. Fixed `ScanField` and `ScannerInput` so scanner inputs no longer render nested forms; Enter and the scan button still submit scans, and mobile autofocus no longer scrolls the receiving page into a broken blank view.
+- Validation: `pnpm ui:smoke`, `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: this catches blank mobile screens and obvious broken scaffold rendering. The receiving mobile screenshot now starts with the Russian page header and scanner guidance instead of a blank viewport.
+- Architecture review: UI/test harness changes only; stock, permissions, auth, and tenant isolation remain unchanged.
+- Remaining risk: smoke screenshots do not execute full receive/pick/pack workflows; Playwright-style browser E2E remains needed for production sign-off.
