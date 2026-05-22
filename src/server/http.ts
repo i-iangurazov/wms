@@ -168,10 +168,13 @@ const russianErrorMessages: Record<string, string> = {
   "Invalid reservation action.": "Некорректное действие резерва.",
   "Order must be open before allocation.": "Резервировать можно только открытый заказ.",
   "Order already has active reservations.": "По заказу уже есть активный резерв.",
+  "Order must be allocated before pick work.": "Сначала зарезервируйте товар по заказу.",
+  "Order allocation does not cover all order lines.": "Резерв не покрывает все строки заказа.",
   "Insufficient stock for order allocation.": "Недостаточно доступного товара для резерва заказа.",
   "Cannot release reservations after pick work was created.":
     "Нельзя снять резерв после создания задания на сборку.",
   "No active reservations found.": "Активный резерв не найден.",
+  "Reservation is not available for picking.": "Резерв недоступен для сборки.",
   "Pick work already exists for this order.": "Задание на сборку для этого заказа уже создано.",
   "No pickable stock location can satisfy an order line.": "Нет подходящей ячейки сборки с нужным товаром.",
   "Pick line not found.": "Шаг сборки не найден.",

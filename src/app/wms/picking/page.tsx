@@ -50,6 +50,7 @@ export default function PickingPage() {
   const [createForm, setCreateForm] = useState({ orderId: "", warehouseId: "" });
   const [pickInputs, setPickInputs] = useState<Record<string, { locationScan: string; productScan: string; quantity: number }>>({});
   const pickKeysRef = useRef<Record<string, string>>({});
+  const allocationKeysRef = useRef<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -115,6 +116,18 @@ export default function PickingPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+    const allocationKey = allocationKeysRef.current[createForm.orderId] ?? crypto.randomUUID();
+    allocationKeysRef.current[createForm.orderId] = allocationKey;
+    const allocationResponse = await fetch("/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "allocate", ...createForm, idempotencyKey: allocationKey })
+    });
+    const allocationPayload = (await allocationResponse.json()) as { error?: string };
+    if (!allocationResponse.ok) {
+      setError(allocationPayload.error ?? "Не удалось зарезервировать товар.");
+      return;
+    }
     const response = await fetch("/api/warehouse-work", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -124,7 +137,8 @@ export default function PickingPage() {
     if (!response.ok) {
       setError(payload.error ?? "Не удалось создать задание на сборку.");
     } else {
-      setMessage("Задание на сборку создано.");
+      delete allocationKeysRef.current[createForm.orderId];
+      setMessage("Товар зарезервирован, задание на сборку создано.");
       await loadData();
     }
   }
@@ -170,16 +184,16 @@ export default function PickingPage() {
     <div>
       <PageHeader
         title="Сборка заказов"
-        description="Создайте задание по заказу, затем подтвердите ячейку, товар и количество."
+        description="Зарезервируйте товар по заказу, создайте задание и подтвердите ячейку, товар и количество."
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
 
       <ScannerStepLayout
         title="Соберите заказ"
-        instruction="Создайте заказ или выберите существующий, затем подтверждайте строки по одной: ячейка, товар, количество."
+        instruction="Создайте заказ или выберите существующий. Перед сборкой система зарезервирует товар по ячейкам."
         scanHint="Сканируйте ячейку и товар из строки задания."
-        resultHint="После подтверждения товар спишется из ячейки через складской сервис."
+        resultHint="После подтверждения резерв снимется, а товар спишется из ячейки через складской сервис."
       >
       <form onSubmit={createOrder} className="mb-4 rounded-lg border border-border bg-panel p-4 shadow-sm">
         <h2 className="mb-3 text-base font-semibold">Новый заказ для сборки</h2>
@@ -273,7 +287,7 @@ export default function PickingPage() {
           </Field>
           <div className="flex items-end">
             <button className={buttonClass} type="submit">
-              Создать задание
+              Зарезервировать и создать
             </button>
           </div>
         </div>

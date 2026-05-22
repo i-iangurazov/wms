@@ -372,6 +372,11 @@ async function main() {
       productId: product.id,
       quantity: 4
     });
+    await allocateOrderStock(context, {
+      orderId: order.id,
+      warehouseId: warehouse.id,
+      idempotencyKey: `allocate-pick-${suffix}`
+    });
     const work = await createPickWorkFromOrder(context, { orderId: order.id, warehouseId: warehouse.id });
     await assert.rejects(
       () => createPickWorkFromOrder(otherContext, { orderId: order.id, warehouseId: warehouse.id }),
@@ -486,6 +491,8 @@ async function main() {
         "RESERVE",
         "RELEASE_RESERVATION",
         "CYCLE_COUNT_CORRECTION",
+        "RESERVE",
+        "RELEASE_RESERVATION",
         "PICK",
         "TRANSFER"
       ]

@@ -1005,6 +1005,7 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Tasks: update order/picking services; support order line split across bins; prevent double allocation.
 - Validation: DB smoke, service tests, route tests.
 - Continue when: multi-line and split-bin picking are proven.
+- Status: IMPLEMENTED at service/UI foundation level. `WarehouseWorkLine` can link to `InventoryReservation`, pick work is generated from reservations, the Russian picking UI reserves before creating work, and pick confirmation releases reserved quantity before `PICK` movement inside the same transaction. Split-bin support exists through one work line per reservation, but dedicated multi-bin UI/E2E coverage remains required.
 
 ### Phase R4: Short Pick Resolution
 

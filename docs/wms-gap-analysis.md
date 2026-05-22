@@ -1113,3 +1113,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: no new visible worker screen yet; API errors and movement labels are Russian. Allocation UI remains a gap for the picking page.
 - Architecture review: reservation and release change `reservedQty` only through `StockMovementService`, create append-only movement rows, run in a transaction, preserve store isolation, and audit sensitive reservation changes.
 - Remaining risk: `createPickWorkFromOrder` still selects balances directly instead of consuming reservations. Phase R3 must generate pick work from reservations, support split-bin lines, release reservations on cancel/short-pick, and expose a simple Russian allocation action in the picking flow.
+
+#### Phase 31: Allocation-Driven Pick Work
+
+- Status: implemented at service/UI foundation level; still needs dedicated route/E2E coverage and short-pick resolution.
+- What changed: added optional `reservationId` on `warehouse_work_lines`, migration `20260522092000_work_line_reservation_link`, pick work generation from active reservations, one work line per reserved bin, Russian picking UI action `Зарезервировать и создать`, and transactional reserved-quantity release before `PICK` movement during line confirmation.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: the picking page now explains that stock is reserved before work starts and that confirmation removes the reserve before stock is picked. The worker still sees a simple scan location/product/quantity flow.
+- Architecture review: picking no longer selects raw balances at work creation. Reservations are the source of executable work, `reservedQty` is released through `StockMovementService`, `PICK` remains append-only, and the DB smoke verifies the movement sequence.
+- Remaining risk: no explicit reservation release on order cancel, no manager short-pick resolution, no browser/mobile E2E, no route-level test for `/api/reservations`, and no dedicated UI showing split-bin reservation details before work creation.

@@ -566,6 +566,7 @@ model InventoryReservation {
   product     Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant     ProductVariant?            @relation(fields: [variantId], references: [id], onDelete: SetNull)
   createdBy   User                       @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  workLines   WarehouseWorkLine[]
 
   @@index([storeId, status])
   @@index([storeId, productId, variantKey])
@@ -650,6 +651,7 @@ model WarehouseWorkLine {
   id                    String                  @id @default(cuid())
   workId                String
   receivingLineId       String?
+  reservationId         String?
   sourceLocationId      String
   destinationLocationId String?
   productId             String
@@ -667,6 +669,7 @@ model WarehouseWorkLine {
   updatedAt             DateTime                @updatedAt
   work                  WarehouseWork           @relation(fields: [workId], references: [id], onDelete: Cascade)
   receivingLine         ReceivingLine?          @relation(fields: [receivingLineId], references: [id], onDelete: SetNull)
+  reservation           InventoryReservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   sourceLocation        WarehouseLocation       @relation("WorkSourceLocation", fields: [sourceLocationId], references: [id], onDelete: Restrict)
   destinationLocation   WarehouseLocation?      @relation("WorkDestinationLocation", fields: [destinationLocationId], references: [id], onDelete: SetNull)
   product               Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -674,6 +677,7 @@ model WarehouseWorkLine {
 
   @@index([workId, status])
   @@index([receivingLineId])
+  @@index([reservationId])
   @@map("warehouse_work_lines")
 }
 

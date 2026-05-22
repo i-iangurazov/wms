@@ -4,7 +4,6 @@ import { AppError } from "@/server/errors";
 import { requirePermission } from "@/server/permissions";
 import { writeAuditLog } from "@/server/services/auditService";
 import { applyStockMovementInTransaction } from "@/server/services/stockMovementService";
-import { availableQuantity } from "@/server/services/stockMovementEngine";
 import { attachWorkflowMovement, claimWorkflowCommand } from "@/server/services/commandIdempotency";
 import {
   assertLocationScanMatches,
@@ -13,7 +12,6 @@ import {
   headerStatusForLineStatuses,
   pickExceptionReason
 } from "@/server/services/pickingRules";
-import { getPickLocationIdsByPriority } from "@/server/services/warehouseRuleService";
 
 export async function listPickWork(context: RequestContext) {
   requirePermission(context.role, "picking.execute");
@@ -48,6 +46,9 @@ export async function createPickWorkFromOrder(
     if (order.work.some((work) => work.type === "PICK" && work.status !== "CANCELLED")) {
       throw new AppError("Pick work already exists for this order.", 409);
     }
+    if (order.status !== "ALLOCATED") {
+      throw new AppError("Order must be allocated before pick work.", 409);
+    }
     const warehouse = await tx.warehouse.findFirst({
       where: { id: input.warehouseId, storeId: context.storeId, status: "ACTIVE" }
     });
@@ -55,40 +56,29 @@ export async function createPickWorkFromOrder(
       throw new AppError("Active warehouse not found.", 404);
     }
 
-    const lines = [];
-    const pickLocationIdsByPriority = await getPickLocationIdsByPriority(tx, context, warehouse.id);
-    const pickPriority = new Map(pickLocationIdsByPriority.map((locationId, index) => [locationId, index]));
+    const reservations = await tx.inventoryReservation.findMany({
+      where: {
+        storeId: context.storeId,
+        warehouseId: warehouse.id,
+        status: "RESERVED",
+        orderLine: { orderId: order.id }
+      },
+      orderBy: { createdAt: "asc" }
+    });
+    if (reservations.length === 0) {
+      throw new AppError("Order must be allocated before pick work.", 409);
+    }
+    const reservedByOrderLine = new Map<string, number>();
+    for (const reservation of reservations) {
+      reservedByOrderLine.set(
+        reservation.orderLineId,
+        (reservedByOrderLine.get(reservation.orderLineId) ?? 0) + reservation.quantity
+      );
+    }
     for (const orderLine of order.lines) {
-      const candidateBalances = await tx.inventoryLocationBalance.findMany({
-        where: {
-          storeId: context.storeId,
-          warehouseId: warehouse.id,
-          productId: orderLine.productId,
-          variantKey: orderLine.variantKey,
-          onHandQty: { gte: orderLine.quantity },
-          location: { status: "ACTIVE", isPickable: true }
-        },
-        orderBy: [{ onHandQty: "desc" }]
-      });
-      const sortedBalances = [...candidateBalances].sort((left, right) => {
-        const leftPriority = pickPriority.get(left.locationId) ?? Number.MAX_SAFE_INTEGER;
-        const rightPriority = pickPriority.get(right.locationId) ?? Number.MAX_SAFE_INTEGER;
-        if (leftPriority !== rightPriority) {
-          return leftPriority - rightPriority;
-        }
-        return right.onHandQty - left.onHandQty;
-      });
-      const balance = sortedBalances.find((item) => availableQuantity(item) >= orderLine.quantity);
-      if (!balance) {
-        throw new AppError("No pickable stock location can satisfy an order line.", 409);
+      if ((reservedByOrderLine.get(orderLine.id) ?? 0) !== orderLine.quantity) {
+        throw new AppError("Order allocation does not cover all order lines.", 409);
       }
-      lines.push({
-        sourceLocationId: balance.locationId,
-        productId: orderLine.productId,
-        variantId: orderLine.variantId,
-        variantKey: orderLine.variantKey,
-        quantity: orderLine.quantity
-      });
     }
 
     const work = await tx.warehouseWork.create({
@@ -99,7 +89,16 @@ export async function createPickWorkFromOrder(
         status: "OPEN",
         sourceOrderId: order.id,
         createdById: context.user.id,
-        lines: { create: lines }
+        lines: {
+          create: reservations.map((reservation) => ({
+            reservationId: reservation.id,
+            sourceLocationId: reservation.locationId,
+            productId: reservation.productId,
+            variantId: reservation.variantId,
+            variantKey: reservation.variantKey,
+            quantity: reservation.quantity
+          }))
+        }
       },
       include: { lines: true }
     });
@@ -126,6 +125,7 @@ export async function confirmPickLine(
       where: { id: input.lineId },
       include: {
         work: { include: { lines: true, sourceOrder: true } },
+        reservation: true,
         sourceLocation: true,
         product: true,
         variant: true
@@ -157,6 +157,22 @@ export async function confirmPickLine(
     const remaining = line.quantity - line.pickedQuantity;
     assertPickQuantity({ requested: input.quantity, remaining });
 
+    if (line.reservation) {
+      if (line.reservation.status !== "RESERVED" && line.reservation.status !== "PICKING") {
+        throw new AppError("Reservation is not available for picking.", 409);
+      }
+      await applyStockMovementInTransaction(tx, context, {
+        productId: line.productId,
+        variantId: line.variantId,
+        type: "RELEASE_RESERVATION",
+        quantity: input.quantity,
+        stockStateLocationId: line.sourceLocationId,
+        stockStateDelta: { reservedQty: -input.quantity },
+        referenceType: "WarehouseWorkLine",
+        referenceId: line.id
+      });
+    }
+
     const movement = await applyStockMovementInTransaction(tx, context, {
       productId: line.productId,
       variantId: line.variantId,
@@ -171,6 +187,12 @@ export async function confirmPickLine(
     const pickedQuantity = line.pickedQuantity + input.quantity;
     const lineStatus = pickedQuantity >= line.quantity ? "COMPLETED" : "IN_PROGRESS";
     const exceptionReason = pickExceptionReason({ pickedQuantity, requiredQuantity: line.quantity });
+    if (line.reservation) {
+      await tx.inventoryReservation.update({
+        where: { id: line.reservation.id },
+        data: { status: lineStatus === "COMPLETED" ? "PICKED" : "PICKING" }
+      });
+    }
     const updatedLine = await tx.warehouseWorkLine.update({
       where: { id: line.id },
       data: {
