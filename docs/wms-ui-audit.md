@@ -4,17 +4,18 @@ This audit is based on the current standalone WMS code in `src/app/wms` and shar
 
 ## Summary
 
-The UI is no longer a raw technical scaffold: active WMS screens now use shared form controls, select styling, cards, table wrappers, loading/error states, page headers, Russian status badges, and browser smoke coverage for representative desktop/mobile pages. Remaining UI gaps are density in the largest operational/admin screens, missing sticky mobile action areas, and lack of full click-through Playwright-style workflow E2E.
+The UI foundation is improving but is not complete. The repo now has product-grade dependencies (`lucide-react`, Radix primitives, TanStack Table, React Hook Form, Zod, Sonner, date-fns, Papaparse/XLSX, Playwright), real navigation icons, an icon-based empty state, a Radix Select primitive, and a first Playwright E2E harness. Remaining blockers are page-by-page replacement of native selects, dense operational/admin screens, sticky mobile action areas, and full click-through scanner workflow E2E.
 
 ## Shared Components
 
 | Component | Current issue | Why it is bad | Target | Required fix | Priority | Files | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| App shell | Plain sidebar links, no icons, weak active state, mobile nav is basic chips. | Feels like a scaffold and workers cannot orient quickly. | Workflow-first SaaS navigation with icons, active/hover states, role visibility. | Add nav icon map, active state through CSS, stronger sidebar/mobile styling. | P0 | `src/components/AppShell.tsx`, `src/app/globals.css` | IMPLEMENTED |
-| Form controls | `inputClass` is minimal and used for selects; select arrow can sit too close to text. | Looks like default form UI and can clip Russian values. | Polished shared control class with focus, disabled, select arrow padding. | Add `wms-control`, `selectClass`, textarea, button variants. | P0 | `src/components/FormControls.tsx`, `src/app/globals.css` | IMPLEMENTED |
+| App shell | Letter placeholders were used as fake icons. | Feels like a scaffold and workers cannot orient quickly. | Workflow-first SaaS navigation with real icons, active/hover states, role visibility. | Use `lucide-react` icon map for every primary nav item. | P0 | `src/components/AppShell.tsx`, `src/components/NavItem.tsx` | IMPLEMENTED |
+| Form controls | Native selects still exist on many pages, but the fallback class now has select-specific padding/arrow styling. | Native selects still feel less polished than product-grade controls. | Radix Select for active forms; styled native fallback only where migration is pending. | Replace page-level native selects with shared `Select`. | P0 | `src/components/FormControls.tsx`, `src/components/ui/Select.tsx`, WMS pages | PARTIAL |
+| UI primitives | Runtime dependencies and primitives were too thin for a serious SaaS UI. | Missing primitives caused random page-local controls and inconsistent states. | Shared Button/Input/Select/Textarea/Badge/Card/Table/Dialog/Dropdown/Tabs primitives. | Adopt Radix/lucide primitives and migrate active pages over time. | P0 | `src/components/ui/*`, `package.json` | PARTIAL |
 | Buttons | Only primary/secondary; inline text buttons exist on pages. | Random action styles reduce trust and clarity. | Primary/secondary/ghost/danger with consistent height and disabled state. | Extend button classes and replace worst inline page buttons. | P0 | `FormControls.tsx`, pages | PARTIAL |
 | StatusBadge | Binary green/gray only. | Does not distinguish warning/danger/progress/blocked. | Central status mapping to neutral/info/success/warning/danger/blocked/progress. | Replace logic with status visual map. | P0 | `src/components/StatusBadge.tsx` | IMPLEMENTED |
-| EmptyState | Basic dashed box only. | Looks unfinished and lacks action support. | Calm empty panel with optional action. | Add action slot and improved spacing. | P1 | `src/components/EmptyState.tsx` | IMPLEMENTED |
+| EmptyState | Meaningless empty circle was used. | Empty states looked unfinished and did not explain the missing work. | Icon-based empty state with title, description, action, and variants. | Use meaningful lucide icon per context. | P1 | `src/components/EmptyState.tsx` | IMPLEMENTED |
 | PageHeader | Basic title/description only. | Weak hierarchy on complex pages. | Header with optional eyebrow/action and better spacing. | Improve typography and action placement. | P1 | `src/components/PageHeader.tsx` | IMPLEMENTED |
 | NoticeBanner | Basic color blocks. | Inconsistent with desired badge/status tone. | Subtle bordered success/error/info. | Tune colors, radius, spacing. | P1 | `src/components/wms/NoticeBanner.tsx` | IMPLEMENTED |
 | ScannerStepLayout | Functional but uppercase labels and small cards feel generic. | Worker flows need more confidence and clarity. | Three clear guide panels, mobile first, no shouty uppercase. | Polish spacing, labels, helper panels. | P0 | `ScannerStepLayout.tsx`, `ScanField.tsx` | IMPLEMENTED |
@@ -25,7 +26,7 @@ The UI is no longer a raw technical scaffold: active WMS screens now use shared 
 
 | Page | Current issue | Reference-quality target | Required fix | Priority | Files | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| `Обзор` | Metrics and panels use repeated custom cards; loading/error states are inline. | Dashboard cards with consistent card/table/list spacing. | Reuse shared card/loading/error primitives and status mapping. | P1 | `src/app/wms/page.tsx` | IMPLEMENTED |
+| `Обзор` | Previously passive metrics made the dashboard feel like a dev scaffold. | Operational command center that answers what needs action now. | Action cards for receiving, put-away, picking, discrepancies, plus contextual metrics. | P1 | `src/app/wms/page.tsx` | PARTIAL |
 | `Задачи` | Functional task center, but card styling is custom. | Worker task center with polished cards and clear actions. | Use shared card/action/status patterns. | P0 | `src/app/wms/tasks/page.tsx` | IMPLEMENTED |
 | `Товары и остатки` | Hub is clean but plain. | Clear grouped entry points. | Use improved WorkflowHub. | P1 | `src/app/wms/stock/page.tsx` | IMPLEMENTED |
 | `Приёмка` | Large functional page; forms/cards are custom and dense. | Scanner-first receiving with polished controls, clear success/error. | Shared controls and scanner layout polish. | P0 | `src/app/wms/receiving/page.tsx` | PARTIAL |
@@ -50,13 +51,15 @@ The UI is no longer a raw technical scaffold: active WMS screens now use shared 
 
 | Issue | Why it matters | Fix | Priority | Status |
 | --- | --- | --- | --- | --- |
-| Select arrow and padding | Current selects can look raw/cramped. | Global native select styling through `.wms-control`. | P0 | IMPLEMENTED |
+| Fake letter nav icons | Letter badges made the product feel unfinished. | Replace with real lucide icons mapped to workflow nav. | P0 | IMPLEMENTED |
+| Select arrow and padding | Current native selects can look raw/cramped. | Shared Radix Select plus styled native fallback. | P0 | PARTIAL |
+| Empty circles | Empty-state decoration looked meaningless. | Icon-based empty states with action support. | P0 | IMPLEMENTED |
 | Raw inline error/loading blocks | Inconsistent color/radius/spacing. | Add `LoadingState`, `ErrorState`; gradually replace. | P1 | IMPLEMENTED |
 | Tables | Repeated raw table classes across many pages. | Global WMS table styles plus future `DataTable`. | P0 | PARTIAL |
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
 | Mobile scanner UI | Functional but not visually strong enough. | Improve scanner components first. | P0 | PARTIAL |
-| E2E visual coverage | No Playwright runner is installed; a local Chrome screenshot smoke exists. | Keep no-dependency smoke for core pages; add full Playwright workflow E2E later. | P2 | PARTIAL |
+| E2E visual/workflow coverage | Browser smoke exists and Playwright is now installed, but tests are still foundation-level. | Keep screenshot smoke; grow Playwright into full scanner click-through coverage. | P0 | PARTIAL |
 | UI regression contract | No guard against reintroducing scaffold classes. | Active pages should stay on shared primitives. | P1 | IMPLEMENTED |
 
 ## Phase Tracking
@@ -100,3 +103,11 @@ The UI is no longer a raw technical scaffold: active WMS screens now use shared 
 - Status: IMPLEMENTED as no-dependency screenshot smoke.
 - Acceptance: `pnpm ui:smoke` starts Next with safe dev auth fallback and captures desktop/mobile screenshots for login, overview, tasks, receiving, picking, and settings.
 - Remaining gap: this is visual render smoke, not full click-through E2E for warehouse workflows.
+
+### UI Phase 8: Product UI Foundation And E2E Harness
+
+- Status: PARTIAL.
+- Acceptance: fake letter nav icons are gone, shared product-grade UI primitives exist, the warehouse form uses the real Select pilot, the dashboard is action-oriented, and `pnpm test:e2e` exists.
+- Progress: installed the requested UI/runtime libraries, added lucide navigation icons, replaced the empty-state circle with a contextual icon component, added Radix Select/Dialog/Dropdown/Tabs primitives, redesigned the dashboard around operational actions, and added Playwright tests for login/protected routing, product creation, warehouse creation, a full API-backed receive/put-away/transfer/count/pick/pack flow with UI verification, and Russian access-denied behavior.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and `pnpm test:e2e` pass.
+- Remaining gap: many active pages still contain native selects and dense custom form/table sections. The Playwright workflow test proves the operational backend through a browser session, but it is not yet a full click-through scanner workflow for every operation.

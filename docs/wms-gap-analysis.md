@@ -1185,3 +1185,21 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: this catches blank mobile screens and obvious broken scaffold rendering. The receiving mobile screenshot now starts with the Russian page header and scanner guidance instead of a blank viewport.
 - Architecture review: UI/test harness changes only; stock, permissions, auth, and tenant isolation remain unchanged.
 - Remaining risk: smoke screenshots do not execute full receive/pick/pack workflows; Playwright-style browser E2E remains needed for production sign-off.
+
+#### Phase 39: Product-Grade UI Foundation And Library Adoption
+
+- Status: partially implemented; page migration remains active.
+- What changed: adopted product-grade UI/runtime dependencies (`lucide-react`, Radix Select/Dialog/Dropdown/Tabs/Popover, React Hook Form, Zod, TanStack Table, Sonner, date-fns, Papaparse/XLSX, Playwright), added `docs/wms-ui-product-redesign.md`, created shared UI primitives in `src/components/ui`, replaced fake letter navigation icons with real lucide icons, replaced the meaningless empty-state circle with an icon-based empty state, and made `selectClass` a real native fallback instead of an input alias.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and `pnpm test:e2e` passed.
+- UX review: the app is moving toward a serious SaaS foundation, but many active screens still need migration from native selects/custom dense sections to the new primitives.
+- Architecture review: UI/dependency changes only; no stock mutation, ledger, auth, permission, or tenant-isolation behavior changed.
+- Remaining risk: dependency surface increased and must be guarded by continued build/test validation. E2E is now present but not yet complete scanner click-through coverage.
+
+#### Phase 40: Operational Dashboard And Playwright E2E Foundation
+
+- Status: partially implemented; pending full validation.
+- What changed: redesigned `/wms` from passive metrics into an operational command center that prioritizes receiving, put-away, picking, and discrepancies. Added Playwright config and `e2e/wms-operational-ui.spec.ts` covering protected login, Russian workflow navigation, UI product creation, UI warehouse creation with Radix Select, API-backed receive/put-away/transfer/cycle-count/pick/pack flow verified through UI pages, and Russian access-denied state for a viewer.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and `pnpm test:e2e` passed.
+- UX review: the dashboard now answers what requires action now. E2E still needs more click-through scanner coverage before product UI hardening can be considered done.
+- Architecture review: workflow stock changes in E2E still go through existing API/services and therefore through `StockMovementService`; the UI phase itself did not alter stock logic.
+- Remaining risk: Playwright tests require seeded admin credentials and a reachable local database. The new E2E is meaningful but still not a substitute for full mobile scanner workflow tests.

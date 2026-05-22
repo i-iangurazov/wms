@@ -199,7 +199,10 @@ export default function PackingPage() {
                         <div className="text-sm font-semibold">Заказ {work.sourceOrder?.number ?? "без номера"}</div>
                         <div className="text-xs text-muted">{work.warehouse.code}</div>
                       </div>
-                      <StatusBadge value={work.status} />
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <StatusBadge value={work.status} />
+                        {work.sourceOrder ? <StatusBadge value={work.sourceOrder.status} /> : null}
+                      </div>
                     </div>
                     <div className="space-y-3">
                       {work.lines.map((line) => {

@@ -2,10 +2,37 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Boxes,
+  ClipboardList,
+  History,
+  LayoutDashboard,
+  PackageCheck,
+  PackageSearch,
+  RefreshCw,
+  ScanSearch,
+  Settings,
+  Warehouse,
+  type LucideIcon
+} from "lucide-react";
 
-export function NavItem({ href, label, icon }: { href: string; label: string; icon: string }) {
+const navIcons: Record<string, LucideIcon> = {
+  "/wms": LayoutDashboard,
+  "/wms/tasks": ClipboardList,
+  "/wms/stock": Boxes,
+  "/wms/receiving": PackageCheck,
+  "/wms/fulfillment": PackageSearch,
+  "/wms/cycle-counts": ScanSearch,
+  "/wms/replenishment": RefreshCw,
+  "/wms/locations": Warehouse,
+  "/wms/journal": History,
+  "/wms/settings": Settings
+};
+
+export function NavItem({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
   const active = href === "/wms" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const Icon = navIcons[href] ?? LayoutDashboard;
 
   return (
     <Link
@@ -24,7 +51,7 @@ export function NavItem({ href, label, icon }: { href: string; label: string; ic
             : "border-border text-muted group-hover:border-accent group-hover:text-accent"
         ].join(" ")}
       >
-        {icon}
+        <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <span>{label}</span>
     </Link>
@@ -34,16 +61,18 @@ export function NavItem({ href, label, icon }: { href: string; label: string; ic
 export function MobileNavItem({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
   const active = href === "/wms" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const Icon = navIcons[href] ?? LayoutDashboard;
 
   return (
     <Link
       href={href}
       className={[
-        "inline-flex whitespace-nowrap rounded-md border px-3 py-2 text-sm font-semibold",
+        "inline-flex items-center gap-2 whitespace-nowrap rounded-md border px-3 py-2 text-sm font-semibold",
         active ? "border-teal-200 bg-teal-50 text-accent" : "border-border bg-white text-muted"
       ].join(" ")}
       aria-current={active ? "page" : undefined}
     >
+      <Icon className="h-4 w-4" aria-hidden="true" />
       {label}
     </Link>
   );

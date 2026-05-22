@@ -1,6 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  ClipboardList,
+  History,
+  PackageCheck,
+  PackageSearch,
+  RefreshCw,
+  ScanSearch,
+  Warehouse,
+  type LucideIcon
+} from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass } from "@/components/FormControls";
@@ -66,6 +78,16 @@ const metricLabels: Record<keyof Dashboard["metrics"], string> = {
   stockDiscrepancies: "Расхождения"
 };
 
+const metricIcons: Record<keyof Dashboard["metrics"], LucideIcon> = {
+  activeWarehouses: Warehouse,
+  activeLocations: Warehouse,
+  totalUnits: PackageCheck,
+  pendingReceiving: PackageCheck,
+  pendingPutAway: RefreshCw,
+  pendingPicking: PackageSearch,
+  stockDiscrepancies: AlertTriangle
+};
+
 export default function WmsDashboardPage() {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,10 +115,89 @@ export default function WmsDashboardPage() {
       {!dashboard ? <LoadingState message="Загрузка обзора..." /> : null}
       {dashboard ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
+            <div className={`${cardClass} bg-white`}>
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-accent">Что требует действия сейчас</p>
+                  <h2 className="mt-1 text-xl font-semibold text-ink">Операционный центр склада</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                    Сначала обработайте приёмку, размещение, сборку и расхождения. Метрики ниже служат контекстом,
+                    а не заменяют рабочие действия.
+                  </p>
+                </div>
+                <ClipboardList className="h-6 w-6 text-accent" aria-hidden="true" />
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <ActionCard
+                  icon={PackageCheck}
+                  title="Принять товар"
+                  value={dashboard.metrics.pendingReceiving}
+                  description="Открытые приёмки и строки, которые ждут подтверждения."
+                  href="/wms/receiving"
+                  action="Открыть приёмку"
+                  urgent={dashboard.metrics.pendingReceiving > 0}
+                />
+                <ActionCard
+                  icon={RefreshCw}
+                  title="Разместить товар"
+                  value={dashboard.metrics.pendingPutAway}
+                  description="Товар в зоне приёмки, который нужно перенести в ячейки."
+                  href="/wms/put-away"
+                  action="Открыть размещение"
+                  urgent={dashboard.metrics.pendingPutAway > 0}
+                />
+                <ActionCard
+                  icon={PackageSearch}
+                  title="Собрать заказы"
+                  value={dashboard.metrics.pendingPicking}
+                  description="Задания сборки, которые готовы к выполнению или требуют внимания."
+                  href="/wms/picking"
+                  action="Открыть сборку"
+                  urgent={dashboard.metrics.pendingPicking > 0}
+                />
+                <ActionCard
+                  icon={ScanSearch}
+                  title="Проверить расхождения"
+                  value={dashboard.metrics.stockDiscrepancies}
+                  description="Инвентаризация и сверка, где количество не совпадает."
+                  href="/wms/reconciliation"
+                  action="Проверить остатки"
+                  urgent={dashboard.metrics.stockDiscrepancies > 0}
+                />
+              </div>
+            </div>
+
+            <div className={`${cardClass} bg-slate-950 text-white`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-teal-200">Следующий шаг</p>
+                  <h2 className="mt-1 text-xl font-semibold">Работайте из задач</h2>
+                </div>
+                <ClipboardList className="h-6 w-6 text-teal-200" aria-hidden="true" />
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-300">
+                Для сотрудников склада главный вход — `Задачи`: там видно, что сканировать, где товар и что делать дальше.
+              </p>
+              <Link
+                href="/wms/tasks"
+                className="mt-5 inline-flex min-h-10 items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+              >
+                Перейти к задачам
+              </Link>
+            </div>
+          </section>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {(Object.keys(dashboard.metrics) as (keyof Dashboard["metrics"])[]).map((key) => (
               <div key={key} className={cardClass}>
-                <div className="text-sm font-medium text-muted">{metricLabels[key]}</div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-medium text-muted">{metricLabels[key]}</div>
+                  {(() => {
+                    const Icon = metricIcons[key];
+                    return <Icon className="h-4 w-4 text-muted" aria-hidden="true" />;
+                  })()}
+                </div>
                 <div className="mt-2 text-2xl font-semibold">{dashboard.metrics[key]}</div>
               </div>
             ))}
@@ -105,7 +206,7 @@ export default function WmsDashboardPage() {
           <div className="mt-6 grid gap-4 xl:grid-cols-2">
             <DashboardPanel title="Последние движения">
               {dashboard.recentMovements.length === 0 ? (
-                <EmptyState title={emptyStates.movementsTitle} body={emptyStates.movementsBody} />
+                <EmptyState icon={History} title={emptyStates.movementsTitle} body={emptyStates.movementsBody} />
               ) : (
                 dashboard.recentMovements.map((movement) => (
                   <Row key={movement.id}>
@@ -121,7 +222,7 @@ export default function WmsDashboardPage() {
 
             <DashboardPanel title="Приёмка в работе">
               {dashboard.pendingReceiving.length === 0 ? (
-                <EmptyState title="Нет открытой приёмки" body="Новые приёмки появятся здесь." />
+                <EmptyState icon={PackageCheck} title="Нет открытой приёмки" body="Новые приёмки появятся здесь." />
               ) : (
                 dashboard.pendingReceiving.map((session) => (
                   <Row key={session.id}>
@@ -137,7 +238,7 @@ export default function WmsDashboardPage() {
 
             <DashboardPanel title="Ожидает размещения">
               {dashboard.pendingPutAway.length === 0 ? (
-                <EmptyState title={emptyStates.putawayTitle} body={emptyStates.putawayBody} />
+                <EmptyState icon={RefreshCw} title={emptyStates.putawayTitle} body={emptyStates.putawayBody} />
               ) : (
                 dashboard.pendingPutAway.map((balance) => (
                   <Row key={balance.id}>
@@ -167,13 +268,53 @@ export default function WmsDashboardPage() {
                 </Row>
               ))}
               {dashboard.pendingPicking.length === 0 && dashboard.stockDiscrepancies.length === 0 ? (
-                <EmptyState title="Нет срочных задач" body="Открытая сборка и расхождения появятся здесь." />
+                <EmptyState icon={ClipboardList} title="Нет срочных задач" body="Открытая сборка и расхождения появятся здесь." />
               ) : null}
             </DashboardPanel>
           </div>
         </>
       ) : null}
     </div>
+  );
+}
+
+function ActionCard({
+  icon: Icon,
+  title,
+  value,
+  description,
+  href,
+  action,
+  urgent
+}: {
+  icon: LucideIcon;
+  title: string;
+  value: number;
+  description: string;
+  href: string;
+  action: string;
+  urgent: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        "group rounded-lg border p-4 transition hover:-translate-y-0.5 hover:shadow-md",
+        urgent ? "border-amber-200 bg-amber-50" : "border-border bg-surface"
+      ].join(" ")}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={`rounded-md border bg-white p-2 ${urgent ? "border-amber-200 text-amber-700" : "border-border text-accent"}`}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div className={`rounded-full px-2.5 py-1 text-xs font-semibold ${urgent ? "bg-amber-100 text-amber-800" : "bg-white text-muted"}`}>
+          {value}
+        </div>
+      </div>
+      <h3 className="mt-3 text-sm font-semibold text-ink">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+      <div className="mt-3 text-sm font-semibold text-accent group-hover:text-teal-800">{action}</div>
+    </Link>
   );
 }
 

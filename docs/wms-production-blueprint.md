@@ -1043,6 +1043,14 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Goal: prove real worker flows.
 - Tasks: configure Playwright or documented harness; cover login, receive, put-away, transfer, count, pick, pack.
 - Validation: `pnpm test:e2e` or documented equivalent.
+- Status: PARTIAL. Playwright is installed and `pnpm test:e2e` passes with a first operational suite covering login/protected routing, core Russian navigation, product/warehouse UI creation, API-backed receive/put-away/transfer/cycle-count/pick/pack with UI verification, and Russian access-denied behavior. Remaining work is full click-through scanner/mobile workflow coverage for each operation.
+
+### Phase U2: Product-Grade UI Foundation
+
+- Goal: move from scaffold-like UI to a serious SaaS design foundation.
+- Tasks: adopt lucide/Radix/shared primitives, replace fake nav icons, replace empty-state circles, use real Select components, redesign dashboard as an operational command center, and migrate active pages to shared primitives.
+- Validation: typecheck, lint, unit tests, DB smoke, build, UI smoke, Playwright E2E.
+- Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select pilot, dashboard redesign, and E2E harness are implemented and validated. Active page migration remains incomplete.
 
 ### Phase O1: Production Operations
 

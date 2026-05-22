@@ -6,19 +6,6 @@ import { visibleWmsNavItems } from "@/server/routeAccess";
 import { RouteAccessBoundary } from "@/components/RouteAccessBoundary";
 import { MobileNavItem, NavItem } from "@/components/NavItem";
 
-const navIcons: Record<string, string> = {
-  "/wms": "О",
-  "/wms/tasks": "З",
-  "/wms/stock": "Т",
-  "/wms/receiving": "П",
-  "/wms/fulfillment": "С",
-  "/wms/cycle-counts": "И",
-  "/wms/replenishment": "Р",
-  "/wms/locations": "Я",
-  "/wms/journal": "Ж",
-  "/wms/settings": "Н"
-};
-
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await getSessionContext(cookies().get(sessionCookieName)?.value);
   const navItems = session
@@ -36,7 +23,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="space-y-1.5">
           {navItems.map((item) => (
-            <NavItem key={item.href} href={item.href} label={item.label} icon={navIcons[item.href] ?? item.label.slice(0, 1)} />
+            <NavItem key={item.href} href={item.href} label={item.label} />
           ))}
         </nav>
       </aside>

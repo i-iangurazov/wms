@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Select } from "@/components/ui";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
 type Warehouse = {
@@ -122,16 +123,14 @@ export default function WarehousesPage() {
             />
           </Field>
           <Field label={commonText.status}>
-            <select
-              className={inputClass}
+            <Select
               value={form.status}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, status: event.target.value as FormState["status"] }))
-              }
-            >
-              <option value="ACTIVE">Активно</option>
-              <option value="INACTIVE">Недоступно</option>
-            </select>
+              onValueChange={(status) => setForm((current) => ({ ...current, status: status as FormState["status"] }))}
+              options={[
+                { value: "ACTIVE", label: "Активно" },
+                { value: "INACTIVE", label: "Недоступно" }
+              ]}
+            />
           </Field>
           <div className="flex items-end gap-2">
             <button className={buttonClass} disabled={saving} type="submit">

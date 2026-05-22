@@ -22,7 +22,8 @@ export function Field({
 export const inputClass =
   "wms-control focus-ring w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-ink shadow-sm transition placeholder:text-slate-400 hover:border-slate-300 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
-export const selectClass = inputClass;
+export const selectClass =
+  "wms-control focus-ring w-full rounded-md border border-border bg-white px-3 py-2 pr-11 text-sm text-ink shadow-sm transition placeholder:text-slate-400 hover:border-slate-300 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
 export const textareaClass = `${inputClass} min-h-24 resize-y leading-6`;
 
