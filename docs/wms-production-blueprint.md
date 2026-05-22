@@ -8,6 +8,8 @@ Status legend:
 
 This document is the implementation control document for the standalone WMS in this repository. It is not a product diary. Every roadmap item must map back to a blueprint section and an acceptance gate.
 
+Competitive control source: `docs/wms-competitive-blueprint.md`. Navigation and workflow grouping must follow that benchmark before adding new screens.
+
 ## 1. Executive Summary
 
 ### What This WMS Is
@@ -489,21 +491,19 @@ Canonical permissions are defined in `src/lib/permissionModel.ts`.
 
 ## 7. Information Architecture
 
+Primary navigation must be workflow-first and match `docs/wms-navigation-redesign.md`.
+
 | Section | Target user | Purpose | Primary actions | Hidden complexity | Required states |
 | --- | --- | --- | --- | --- | --- |
 | `Обзор` | Owner, manager | Operational snapshot | View tasks, discrepancies, recent movement | Aggregation and filters | empty, loading, error |
-| `Склады и ячейки` | Admin, manager | Configure warehouses, zones, bins | Create/edit/deactivate | location directives, type flags | empty, validation error, forbidden |
-| `Товары` | Admin, manager | Product catalog | Create/edit/import variants | SKU/barcode uniqueness, labels | import errors, empty, loading |
-| `Остатки` | Manager, viewer | Stock visibility | Search/filter stock | available/unavailable formula | no results, error |
+| `Задачи` | Worker, manager | Daily warehouse task center | Start receive, put-away, transfer, count, pick, pack, replenishment | work type routing and exceptions | empty, loading, forbidden |
+| `Товары и остатки` | Admin, manager, viewer | Catalog and stock visibility | Search stock, import products, manage barcodes, corrections | SKU/variant/barcode internals | import errors, no results, error |
 | `Приёмка` | Worker, manager | Receive inbound goods | Create session, scan product, receive qty | expected vs actual, damage, idempotency | wrong scan, duplicate submit, completed |
-| `Размещение` | Worker | Move received goods to storage/pick | Generate/complete put-away work | destination selection, receiving links | no work, insufficient stock |
-| `Перемещения` | Worker | Internal stock move | scan source/product/destination/qty | negative prevention | wrong scan, insufficient qty |
-| `Пополнение` | Worker, manager | Refill pick locations | create rule, generate/execute work | min/max, source priority | no need, no source stock |
-| `Сборка заказов` | Worker, manager | Pick orders | create work, scan line, confirm qty | allocation/reservation | wrong scan, short pick |
-| `Упаковка` | Worker | Verify picked order | create pack work, verify qty, handoff | session/package future state | wrong item, already packed |
+| `Сборка и упаковка` | Worker, manager | Fulfillment | allocate, pick, short-pick, pack, handoff | reservation and package state | wrong scan, short pick, already packed |
 | `Инвентаризация` | Worker, manager | Count and approve stock | create count, enter counts, submit, approve/reject | blind count, recount | missing count, discrepancy |
-| `Проверка остатков` | Manager, owner | Ledger/balance reconciliation | view discrepancies | signed deltas | no discrepancies, error |
-| `Журнал действий` | Owner, admin, manager | Audit trail | filter/read events | raw metadata translation | empty, loading |
+| `Пополнение` | Worker, manager | Refill pick locations | create rule, generate/execute work | min/max, source priority | no need, no source stock |
+| `Склады` | Admin, manager | Configure warehouses, zones, bins | Create/edit/deactivate | location directives, type flags | empty, validation error, forbidden |
+| `Журнал` | Owner, admin, manager, viewer | Movements, audit, reconciliation | review history, discrepancies, audit | raw metadata and ledger deltas | empty, loading, error |
 | `Настройки` | Owner, admin, manager | Users, org switch, rules | manage users, orgs, rules | role matrix, session rotation | forbidden, validation error |
 
 ## 8. Operational Workflow Blueprints

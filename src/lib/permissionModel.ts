@@ -126,6 +126,10 @@ export const rolePermissions: Record<WmsRole, Permission[]> = {
 
 export const protectedRouteMatrix = [
   { path: "/wms", permission: "wms.view" },
+  { path: "/wms/tasks", permission: "wms.view" },
+  { path: "/wms/stock", permission: "wms.view" },
+  { path: "/wms/fulfillment", permission: "picking.execute" },
+  { path: "/wms/journal", permission: "audit.view" },
   { path: "/wms/locations", permission: "wms.manageLocations" },
   { path: "/wms/warehouses", permission: "wms.manageWarehouses" },
   { path: "/wms/products", permission: "products.manage" },

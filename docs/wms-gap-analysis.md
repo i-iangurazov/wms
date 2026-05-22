@@ -1086,3 +1086,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: no UI flow changed in this phase; the blueprint now makes Russian worker UX acceptance criteria explicit.
 - Architecture review: reservation/allocation is now represented in the database but is not wired into stock-state reservation or picking. No existing stock behavior was changed.
 - Remaining risk: the reservation service, reserve/release stock transitions, allocation-driven pick work, short-pick resolution, API tests, and E2E tests remain gaps.
+
+#### Phase 28: Competitive Blueprint And Navigation Benchmark
+
+- Status: competitive control docs created; implementation started with navigation consolidation.
+- What changed: added `docs/wms-competitive-blueprint.md` based on mature WMS patterns from Dynamics 365, Oracle WMS Cloud, NetSuite WMS, Odoo Inventory/Barcode, SAP EWM-style operations, Zoho, Cin7, Fishbowl, and ShipHero-style fulfillment. Added `docs/wms-navigation-redesign.md` and updated the production blueprint to make competitive navigation the control source.
+- Benchmark gaps added: warehouse workers should start from `Задачи`, product/barcode/stock/corrections should be grouped under `Товары и остатки`, pick/pack/ship should be grouped under `Сборка и упаковка`, movement/audit/reconciliation should be grouped under `Журнал`, and setup must be separated as `Склады` and `Настройки`.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: main navigation is now workflow-first and Russian: `Обзор`, `Задачи`, `Товары и остатки`, `Приёмка`, `Сборка и упаковка`, `Инвентаризация`, `Пополнение`, `Склады`, `Журнал`, `Настройки`. Technical pages remain as deep links under the hubs.
+- Remaining risk: hub pages are not a substitute for a real task-center API; route/API/E2E tests still need to prove workflow execution from the redesigned navigation.

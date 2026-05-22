@@ -2,21 +2,14 @@ import type { PermissionKey } from "@/lib/permissionModel";
 
 export const wmsNavItems = [
   { href: "/wms", label: "Обзор", permission: "wms.view" },
-  { href: "/wms/locations", label: "Склады и ячейки", permission: "wms.manageLocations" },
-  { href: "/wms/products", label: "Товары", permission: "products.manage" },
-  { href: "/wms/barcodes", label: "Штрихкоды", permission: "barcodes.manage" },
-  { href: "/wms/inventory", label: "Остатки", permission: "wms.view" },
+  { href: "/wms/tasks", label: "Задачи", permission: "wms.view" },
+  { href: "/wms/stock", label: "Товары и остатки", permission: "wms.view" },
   { href: "/wms/receiving", label: "Приёмка", permission: "receiving.execute" },
-  { href: "/wms/put-away", label: "Размещение", permission: "putaway.execute" },
-  { href: "/wms/replenishment", label: "Пополнение", permission: "putaway.execute" },
-  { href: "/wms/transfers", label: "Перемещения", permission: "transfers.execute" },
-  { href: "/wms/adjustments", label: "Корректировки", permission: "adjustments.create" },
-  { href: "/wms/picking", label: "Сборка заказов", permission: "picking.execute" },
-  { href: "/wms/packing", label: "Упаковка", permission: "packing.execute" },
+  { href: "/wms/fulfillment", label: "Сборка и упаковка", permission: "picking.execute" },
   { href: "/wms/cycle-counts", label: "Инвентаризация", permission: "cycleCounts.execute" },
-  { href: "/wms/movements", label: "История движений", permission: "wms.view" },
-  { href: "/wms/reconciliation", label: "Проверка остатков", permission: "reports.view" },
-  { href: "/wms/audit", label: "Журнал действий", permission: "audit.view" },
+  { href: "/wms/replenishment", label: "Пополнение", permission: "putaway.execute" },
+  { href: "/wms/locations", label: "Склады", permission: "wms.manageLocations" },
+  { href: "/wms/journal", label: "Журнал", permission: "audit.view" },
   { href: "/wms/settings", label: "Настройки", permission: "users.manage" }
 ] as const satisfies ReadonlyArray<{ href: string; label: string; permission: PermissionKey }>;
 
