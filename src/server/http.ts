@@ -78,6 +78,12 @@ const russianErrorMessages: Record<string, string> = {
   "Barcode was not found.": "Скан не найден.",
   "Barcode matches multiple records.": "Скан найден в нескольких местах. Уточните действие.",
   "Invalid barcode type.": "Некорректный тип скана.",
+  "Invalid barcode label type.": "Некорректный тип штрихкода.",
+  "Barcode label code is required.": "Укажите код штрихкода.",
+  "Barcode label code is too long.": "Код штрихкода слишком длинный.",
+  "Barcode target is required.": "Выберите объект для штрихкода.",
+  "Barcode label already exists.": "Такой штрихкод уже зарегистрирован.",
+  "Barcode label conflicts with an existing record.": "Этот код уже используется другим товаром, ячейкой или заданием.",
   "Warehouse not found.": "Склад не найден.",
   "Warehouse zone not found.": "Зона не найдена.",
   "Location not found.": "Ячейка не найдена.",
@@ -154,7 +160,8 @@ const russianErrorMessages: Record<string, string> = {
   "Pick work already exists for this order.": "Задание на сборку для этого заказа уже создано.",
   "No pickable stock location can satisfy an order line.": "Нет подходящей ячейки сборки с нужным товаром.",
   "Pick line not found.": "Шаг сборки не найден.",
-  "Pick line is already completed.": "Этот шаг сборки уже завершён."
+  "Pick line is already completed.": "Этот шаг сборки уже завершён.",
+  "Warehouse work not found.": "Складское задание не найдено."
 };
 
 function publicErrorMessage(message: string) {

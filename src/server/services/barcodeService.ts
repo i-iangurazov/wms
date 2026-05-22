@@ -56,7 +56,18 @@ export async function resolveBarcode(
     throw new AppError("Barcode scan is required.", 400);
   }
 
-  const [locations, products, variants, orders, workItems] = await Promise.all([
+  const [labels, locations, products, variants, orders, workItems] = await Promise.all([
+    prisma.barcodeLabel.findMany({
+      where: { storeId: context.storeId, code: scan, active: true },
+      include: {
+        product: true,
+        variant: { include: { product: true } },
+        location: { include: { warehouse: true } },
+        order: true,
+        work: { include: { sourceOrder: true, warehouse: true } }
+      },
+      take: 3
+    }),
     prisma.warehouseLocation.findMany({
       where: {
         storeId: context.storeId,
@@ -96,7 +107,95 @@ export async function resolveBarcode(
     })
   ]);
 
-  const candidates: BarcodeResolutionCandidate[] = [
+  const candidates: BarcodeResolutionCandidate[] = dedupeBarcodeCandidates([
+    ...labels.flatMap((label): BarcodeResolutionCandidate[] => {
+      if (label.type === "PRODUCT" && label.product) {
+        return [
+          {
+            type: "PRODUCT" as const,
+            id: label.product.id,
+            label: `${label.product.sku} · ${label.product.name}`,
+            payload: {
+              id: label.product.id,
+              productId: label.product.id,
+              variantId: null,
+              sku: label.product.sku,
+              barcode: label.code,
+              name: label.product.name,
+              labelId: label.id
+            }
+          }
+        ];
+      }
+      if (label.type === "PRODUCT_VARIANT" && label.variant) {
+        return [
+          {
+            type: "PRODUCT" as const,
+            id: label.variant.id,
+            label: `${label.variant.sku} · ${label.variant.product.name}`,
+            payload: {
+              id: label.variant.id,
+              productId: label.variant.productId,
+              variantId: label.variant.id,
+              sku: label.variant.sku,
+              barcode: label.code,
+              name: label.variant.name,
+              productName: label.variant.product.name,
+              labelId: label.id
+            }
+          }
+        ];
+      }
+      if (label.type === "LOCATION" && label.location) {
+        return [
+          {
+            type: "LOCATION" as const,
+            id: label.location.id,
+            label: `${label.location.code} · ${label.location.warehouse.code}`,
+            payload: {
+              id: label.location.id,
+              code: label.location.code,
+              barcode: label.code,
+              warehouseId: label.location.warehouseId,
+              warehouseCode: label.location.warehouse.code,
+              type: label.location.type,
+              status: label.location.status,
+              labelId: label.id
+            }
+          }
+        ];
+      }
+      if (label.type === "ORDER" && label.order) {
+        return [
+          {
+            type: "ORDER" as const,
+            id: label.order.id,
+            label: label.order.number,
+            payload: { id: label.order.id, number: label.order.number, status: label.order.status, labelId: label.id }
+          }
+        ];
+      }
+      if (label.type === "WORK" && label.work) {
+        return [
+          {
+            type: "WORK" as const,
+            id: label.work.id,
+            label: label.work.sourceOrder?.number ?? label.work.id.slice(0, 8),
+            payload: {
+              id: label.work.id,
+              type: label.work.type,
+              status: label.work.status,
+              warehouseId: label.work.warehouseId,
+              warehouseCode: label.work.warehouse.code,
+              sourceOrderId: label.work.sourceOrderId,
+              sourceOrderNumber: label.work.sourceOrder?.number ?? null,
+              labelId: label.id
+            }
+          }
+        ];
+      }
+      return [];
+    }),
     ...locations.map((location) => ({
       type: "LOCATION" as const,
       id: location.id,
@@ -158,7 +257,19 @@ export async function resolveBarcode(
         sourceOrderNumber: work.sourceOrder?.number ?? null
       }
     }))
-  ];
+  ]);
 
   return selectBarcodeResolution(candidates, input.expectedType);
+}
+
+function dedupeBarcodeCandidates(candidates: BarcodeResolutionCandidate[]) {
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.type}:${candidate.id}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }

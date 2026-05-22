@@ -6,6 +6,7 @@ describe("WMS permissions", () => {
     expect(hasPermission("OWNER", "WMS_MANAGE_USERS")).toBe(true);
     expect(hasPermission("ADMIN", "WMS_MANAGE_WAREHOUSES")).toBe(true);
     expect(hasPermission("ADMIN", "WMS_MANAGE_PRODUCTS")).toBe(true);
+    expect(hasPermission("ADMIN", "WMS_MANAGE_BARCODES")).toBe(true);
     expect(hasPermission("ADMIN", "WMS_VIEW_AUDIT")).toBe(true);
     expect(hasPermission("ADMIN", "WMS_MANAGE_USERS")).toBe(true);
   });
@@ -14,6 +15,7 @@ describe("WMS permissions", () => {
     expect(hasPermission("WAREHOUSE_WORKER", "WMS_RECEIVE_STOCK")).toBe(true);
     expect(hasPermission("STAFF", "WMS_RECEIVE_STOCK")).toBe(true);
     expect(hasPermission("STAFF", "WMS_MANAGE_PRODUCTS")).toBe(false);
+    expect(hasPermission("STAFF", "WMS_MANAGE_BARCODES")).toBe(false);
     expect(hasPermission("STAFF", "WMS_VIEW_AUDIT")).toBe(false);
     expect(hasPermission("STAFF", "WMS_ADJUST_STOCK")).toBe(false);
     expect(hasPermission("STAFF", "WMS_APPROVE_CYCLE_COUNT")).toBe(false);

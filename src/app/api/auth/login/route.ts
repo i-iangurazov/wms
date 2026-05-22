@@ -2,17 +2,36 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { jsonError, parseJsonObject, readString } from "@/server/http";
 import { authenticateWithPassword, sessionCookieName } from "@/server/session";
+import {
+  enforceLoginRateLimit,
+  getRequestIp,
+  recordLoginAttempt
+} from "@/server/loginRateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await parseJsonObject(request);
-    const auth = await authenticateWithPassword({
-      email: readString(body, "email"),
-      password: readString(body, "password"),
-      storeId: readString(body, "storeId", false)
-    });
+    const email = readString(body, "email");
+    const password = readString(body, "password");
+    const storeId = readString(body, "storeId", false);
+    const ipAddress = getRequestIp(request.headers);
+
+    await enforceLoginRateLimit({ email, ipAddress });
+
+    let auth;
+    try {
+      auth = await authenticateWithPassword({
+        email,
+        password,
+        storeId
+      });
+    } catch (error) {
+      await recordLoginAttempt({ email, ipAddress, success: false });
+      throw error;
+    }
+    await recordLoginAttempt({ email, ipAddress, success: true, userId: auth.user.id });
     const response = NextResponse.json({
       user: {
         id: auth.user.id,

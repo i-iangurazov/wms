@@ -16,11 +16,24 @@ export function createSessionToken() {
   return randomBytes(32).toString("base64url");
 }
 
+async function createUserSession(input: { userId: string; storeId: string }) {
+  const token = createSessionToken();
+  const session = await prisma.userSession.create({
+    data: {
+      tokenHash: hashSessionToken(token),
+      userId: input.userId,
+      storeId: input.storeId,
+      expiresAt: new Date(Date.now() + sessionTtlMs)
+    }
+  });
+  return { token, session };
+}
+
 export async function authenticateWithPassword(input: { email: string; password: string; storeId?: string | null }) {
   const email = input.email.trim().toLowerCase();
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.active || !(await verifyPassword(input.password, user.passwordHash))) {
-    throw new AppError("Invalid email or password.", 401);
+    throw new AppError("Неверный email или пароль.", 401);
   }
 
   const membership = await prisma.storeUser.findFirst({
@@ -33,18 +46,10 @@ export async function authenticateWithPassword(input: { email: string; password:
     orderBy: { createdAt: "asc" }
   });
   if (!membership) {
-    throw new AppError("User does not have access to an active organization.", 403);
+    throw new AppError("Нет доступа к активной организации.", 403);
   }
 
-  const token = createSessionToken();
-  const session = await prisma.userSession.create({
-    data: {
-      tokenHash: hashSessionToken(token),
-      userId: user.id,
-      storeId: membership.storeId,
-      expiresAt: new Date(Date.now() + sessionTtlMs)
-    }
-  });
+  const { token, session } = await createUserSession({ userId: user.id, storeId: membership.storeId });
 
   return { token, session, user, membership };
 }
@@ -82,11 +87,26 @@ export async function switchSessionOrganization(input: { token: string; userId: 
     include: { store: true }
   });
   if (!membership || !membership.store.active) {
-    throw new AppError("User does not have access to this store.", 403);
+    throw new AppError("Нет доступа к этой организации.", 403);
   }
-  await prisma.userSession.updateMany({
-    where: { tokenHash: hashSessionToken(input.token), userId: input.userId },
-    data: { storeId: membership.storeId }
+  const oldTokenHash = hashSessionToken(input.token);
+  const nextToken = createSessionToken();
+  const session = await prisma.$transaction(async (tx) => {
+    const existing = await tx.userSession.findFirst({
+      where: { tokenHash: oldTokenHash, userId: input.userId }
+    });
+    if (!existing || existing.expiresAt <= new Date()) {
+      throw new AppError("Сессия истекла. Войдите снова.", 401);
+    }
+    await tx.userSession.delete({ where: { id: existing.id } });
+    return tx.userSession.create({
+      data: {
+        tokenHash: hashSessionToken(nextToken),
+        userId: input.userId,
+        storeId: membership.storeId,
+        expiresAt: new Date(Date.now() + sessionTtlMs)
+      }
+    });
   });
-  return membership;
+  return { membership, token: nextToken, session };
 }

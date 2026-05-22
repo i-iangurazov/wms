@@ -1023,3 +1023,21 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: packing asks workers to verify products and quantities in Russian and exposes a simple `Передать в отгрузку` action.
 - Architecture review: packing does not mutate stock; it creates warehouse work and changes order/work statuses transactionally with audit logs.
 - Remaining risk: no carton records, package contents, shipping labels, carrier integration, packing idempotency, or browser/e2e tests yet.
+
+#### Phase 21: Auth Security And Route Protection
+
+- Status: hardened, but still not a full SaaS identity system.
+- What changed: added additive `login_attempts` table, login rate-limit service, Russian login failure copy, persisted login attempt audit data, session-token rotation on organization switch, role-aware WMS navigation, route access matrix, middleware protection tests, and navigation visibility tests.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed. `pnpm prisma:migrate` is still not usable non-interactively; `migrate deploy` is the validated non-interactive path.
+- UX review: login and access failures remain Russian-first; users no longer see navigation links for WMS areas their role cannot use.
+- Architecture review: rate limiting is DB-backed, session switching invalidates the old session token and sets a new HTTP-only cookie, and route protection is covered by tests.
+- Remaining risk: no password reset email, invite email delivery, 2FA, password history, long-term account lockout administration, or external identity provider.
+
+#### Phase 22: Barcode Label Registry Foundation
+
+- Status: implemented at foundation level, not yet a complete import/printing subsystem.
+- What changed: added `BarcodeLabelEntityType`, `barcode_labels` table, barcode label service/API, CSV export, resolver integration, Russian `Штрихкоды` page, role-aware navigation entry, barcode audit label, and unit coverage for label code normalization/type validation/export.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed. An earlier parallel `pnpm typecheck` failed while `next build` was regenerating `.next/types`; rerunning typecheck after build completed passed.
+- UX review: managers get a Russian page to register product, variant, and location codes and download a CSV label list. Worker scanner flows continue to resolve scans without exposing technical registry details.
+- Architecture review: label codes are tenant-scoped and unique per organization, conflicts with existing product/location/order/work scan identifiers are blocked, and scan resolution deduplicates registry aliases against native SKU/barcode matches.
+- Remaining risk: no bulk import, no label print templates, no deactivate/edit UI, no route-level barcode registry tests, and no XLSX support.

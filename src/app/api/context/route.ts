@@ -32,14 +32,17 @@ export async function POST(request: NextRequest) {
     const body = await parseJsonObject(request);
     const storeId = readString(body, "storeId");
     const sessionToken = request.cookies.get(sessionCookieName)?.value;
-    const membership = sessionToken
+    const switchedSession = sessionToken
       ? await switchSessionOrganization({ token: sessionToken, userId: context.user.id, storeId })
-      : await prisma.storeUser.findUnique({
-          where: { storeId_userId: { storeId, userId: context.user.id } },
-          include: { store: true }
-        });
+      : null;
+    const membership =
+      switchedSession?.membership ??
+      (await prisma.storeUser.findUnique({
+        where: { storeId_userId: { storeId, userId: context.user.id } },
+        include: { store: true }
+      }));
     if (!membership || !membership.store.active) {
-      throw new AppError("User does not have access to this store.", 403);
+      throw new AppError("Нет доступа к этой организации.", 403);
     }
     const response = NextResponse.json({
       context: {
@@ -58,6 +61,15 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         sameSite: "lax",
         path: "/"
+      });
+    }
+    if (switchedSession) {
+      response.cookies.set(sessionCookieName, switchedSession.token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        expires: switchedSession.session.expiresAt
       });
     }
     return response;

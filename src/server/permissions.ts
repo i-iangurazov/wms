@@ -6,6 +6,7 @@ export type WmsPermission =
   | "WMS_VIEW_AUDIT"
   | "WMS_MANAGE_USERS"
   | "WMS_MANAGE_PRODUCTS"
+  | "WMS_MANAGE_BARCODES"
   | "WMS_MANAGE_WAREHOUSES"
   | "WMS_MOVE_STOCK"
   | "WMS_RECEIVE_STOCK"
@@ -18,6 +19,7 @@ const managerPermissions: WmsPermission[] = [
   "WMS_VIEW",
   "WMS_VIEW_AUDIT",
   "WMS_MANAGE_PRODUCTS",
+  "WMS_MANAGE_BARCODES",
   "WMS_MANAGE_WAREHOUSES",
   "WMS_MOVE_STOCK",
   "WMS_RECEIVE_STOCK",

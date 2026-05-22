@@ -1,20 +1,23 @@
+import type { WmsPermission } from "@/server/permissions";
+
 export const wmsNavItems = [
-  { href: "/wms", label: "Обзор" },
-  { href: "/wms/locations", label: "Склады и ячейки" },
-  { href: "/wms/products", label: "Товары" },
-  { href: "/wms/inventory", label: "Остатки" },
-  { href: "/wms/receiving", label: "Приёмка" },
-  { href: "/wms/put-away", label: "Размещение" },
-  { href: "/wms/replenishment", label: "Пополнение" },
-  { href: "/wms/transfers", label: "Перемещения" },
-  { href: "/wms/picking", label: "Сборка заказов" },
-  { href: "/wms/packing", label: "Упаковка" },
-  { href: "/wms/cycle-counts", label: "Инвентаризация" },
-  { href: "/wms/movements", label: "История движений" },
-  { href: "/wms/reconciliation", label: "Проверка остатков" },
-  { href: "/wms/audit", label: "Журнал действий" },
-  { href: "/wms/settings", label: "Настройки" }
-] as const;
+  { href: "/wms", label: "Обзор", permission: "WMS_VIEW" },
+  { href: "/wms/locations", label: "Склады и ячейки", permission: "WMS_MANAGE_WAREHOUSES" },
+  { href: "/wms/products", label: "Товары", permission: "WMS_MANAGE_PRODUCTS" },
+  { href: "/wms/barcodes", label: "Штрихкоды", permission: "WMS_MANAGE_BARCODES" },
+  { href: "/wms/inventory", label: "Остатки", permission: "WMS_VIEW" },
+  { href: "/wms/receiving", label: "Приёмка", permission: "WMS_RECEIVE_STOCK" },
+  { href: "/wms/put-away", label: "Размещение", permission: "WMS_MOVE_STOCK" },
+  { href: "/wms/replenishment", label: "Пополнение", permission: "WMS_MOVE_STOCK" },
+  { href: "/wms/transfers", label: "Перемещения", permission: "WMS_MOVE_STOCK" },
+  { href: "/wms/picking", label: "Сборка заказов", permission: "WMS_PICK" },
+  { href: "/wms/packing", label: "Упаковка", permission: "WMS_PICK" },
+  { href: "/wms/cycle-counts", label: "Инвентаризация", permission: "WMS_CYCLE_COUNT" },
+  { href: "/wms/movements", label: "История движений", permission: "WMS_VIEW" },
+  { href: "/wms/reconciliation", label: "Проверка остатков", permission: "WMS_VIEW_AUDIT" },
+  { href: "/wms/audit", label: "Журнал действий", permission: "WMS_VIEW_AUDIT" },
+  { href: "/wms/settings", label: "Настройки", permission: "WMS_MANAGE_WAREHOUSES" }
+] as const satisfies ReadonlyArray<{ href: string; label: string; permission: WmsPermission }>;
 
 export const statusLabels: Record<string, string> = {
   ACTIVE: "Активно",
@@ -105,6 +108,7 @@ export const auditActionLabels: Record<string, string> = {
   "customer_order.ready_to_ship": "Заказ передан в отгрузку",
   "replenishment_rule.create": "Создано правило пополнения",
   "replenishment_rule.deactivate": "Отключено правило пополнения",
+  "barcode_label.create": "Создан штрихкод",
   "store_user.create": "Добавлен пользователь",
   "store_user.update_role": "Изменена роль пользователя",
   "store_user.remove": "Удалён доступ пользователя",
@@ -128,6 +132,7 @@ export const auditEntityLabels: Record<string, string> = {
   WarehouseWork: "Складское задание",
   WarehouseWorkLine: "Шаг задания",
   ReplenishmentRule: "Правило пополнения",
+  BarcodeLabel: "Штрихкод",
   StoreUser: "Доступ пользователя",
   Store: "Организация"
 };

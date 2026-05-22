@@ -99,11 +99,11 @@ async function main() {
     assert.equal(sessionContext?.storeId, store.id);
     await assert.rejects(
       () => authenticateWithPassword({ email: user.email, password: "WrongPassword123!" }),
-      /Invalid email or password/
+      /Неверный email или пароль/
     );
     await assert.rejects(
       () => switchSessionOrganization({ token: auth.token, userId: user.id, storeId: otherStore.id }),
-      /access/
+      /Нет доступа/
     );
     await destroySession(auth.token);
     assert.equal(await getSessionContext(auth.token), null);

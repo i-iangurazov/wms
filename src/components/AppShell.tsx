@@ -1,7 +1,18 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { commonText, wmsNavItems } from "@/lib/wmsText";
+import { sessionCookieName } from "@/lib/authCookies";
+import { getSessionContext } from "@/server/session";
+import { visibleWmsNavItems } from "@/server/routeAccess";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const session = await getSessionContext(cookies().get(sessionCookieName)?.value);
+  const navItems = session
+    ? visibleWmsNavItems(session.role)
+    : process.env.ALLOW_DEV_AUTH_FALLBACK === "true"
+      ? wmsNavItems
+      : [];
+
   return (
     <div className="min-h-screen bg-surface text-ink">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-border bg-panel p-5 lg:block">
@@ -10,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="text-sm text-muted">{commonText.appSubtitle}</div>
         </div>
         <nav className="space-y-1">
-          {wmsNavItems.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -35,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <nav className="mt-3 flex gap-2 overflow-x-auto lg:hidden">
-            {wmsNavItems.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
