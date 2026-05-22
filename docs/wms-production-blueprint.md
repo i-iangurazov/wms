@@ -1050,7 +1050,8 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Goal: move from scaffold-like UI to a serious SaaS design foundation.
 - Tasks: adopt lucide/Radix/shared primitives, replace fake nav icons, replace empty-state circles, use real Select components, redesign dashboard as an operational command center, and migrate active pages to shared primitives.
 - Validation: typecheck, lint, unit tests, DB smoke, build, UI smoke, Playwright E2E.
-- Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select across active pages, a shared responsive TanStack `DataTable`, compact `ActionMenu` for crowded admin row actions, dashboard redesign, and E2E harness are implemented and validated. Active page migration is no longer blocked by raw selects or page-local tables, but dedicated worker cards, form decomposition, dialogs, and full click-through scanner E2E remain incomplete.
+- Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select across active pages, Radix Tooltip, React Query provider, Sonner toaster, shared Zod schemas, Hook Form/Zod product and warehouse forms, CSV/XLSX import preview, Russian date formatting, a shared responsive TanStack `DataTable`, compact `ActionMenu` for crowded admin row actions, dashboard redesign, and E2E harness are implemented and validated. Active page migration is no longer blocked by raw selects or page-local tables, but dedicated worker cards, full workflow form migration, dialogs, and full click-through scanner E2E remain incomplete.
+- Last validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed after the library-stack adoption pass.
 
 ### Phase O1: Production Operations
 

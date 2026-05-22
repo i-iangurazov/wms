@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getRequestContext } from "@/server/auth";
-import { jsonError, jsonOk, parseJsonObject, readString } from "@/server/http";
+import { jsonError, jsonOk, parseJsonObject } from "@/server/http";
 import { deactivateProduct, updateProduct } from "@/server/services/productService";
+import { productInputSchema } from "@/lib/wmsSchemas";
+import { parseServerSchema } from "@/server/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -11,11 +13,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const context = await getRequestContext(request);
     const body = await parseJsonObject(request);
-    const product = await updateProduct(context, params.id, {
-      sku: readString(body, "sku"),
-      name: readString(body, "name"),
-      barcode: readString(body, "barcode", false)
-    });
+    const product = await updateProduct(context, params.id, parseServerSchema(productInputSchema, body));
     return jsonOk({ product });
   } catch (error) {
     return jsonError(error);

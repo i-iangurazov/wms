@@ -1,14 +1,27 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { ActionMenu, DataTable, Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
+import { fetchJson } from "@/lib/apiClient";
 import { commonText, emptyStates } from "@/lib/wmsText";
+import {
+  productInputSchema,
+  productVariantInputSchema,
+  type ProductInput,
+  type ProductVariantInput
+} from "@/lib/wmsSchemas";
 
 type Variant = {
   id: string;
@@ -25,30 +38,78 @@ type Product = {
   variants: Variant[];
 };
 
-type ProductForm = {
-  id?: string;
-  sku: string;
-  name: string;
-  barcode: string;
+type ImportError = { row: number; message: string };
+type ImportPreview = {
+  csv: string;
+  rows: number;
+  columns: string[];
+  errors: ImportError[];
 };
 
-type VariantForm = ProductForm & {
-  productId: string;
-};
+const emptyProductForm: ProductInput = { sku: "", name: "", barcode: "" };
+const emptyVariantForm: ProductVariantInput = { productId: "", sku: "", name: "", barcode: "" };
+const requiredImportColumns = ["sku", "name"];
 
-const emptyProductForm: ProductForm = { sku: "", name: "", barcode: "" };
-const emptyVariantForm: VariantForm = { productId: "", sku: "", name: "", barcode: "" };
+function previewFromRows(rows: Record<string, unknown>[], csv: string): ImportPreview {
+  const columns = Object.keys(rows[0] ?? {});
+  const normalizedColumns = columns.map((column) => column.trim().toLowerCase());
+  const errors = requiredImportColumns
+    .filter((column) => !normalizedColumns.includes(column))
+    .map((column) => ({ row: 1, message: `Нет колонки ${column}.` }));
+  return { csv, rows: rows.length, columns, errors };
+}
+
+async function readProductImportFile(file: File): Promise<ImportPreview> {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension === "xlsx" || extension === "xls") {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      return { csv: "", rows: 0, columns: [], errors: [{ row: 1, message: "В файле нет листов." }] };
+    }
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[sheetName], { defval: "" });
+    return previewFromRows(rows, Papa.unparse(rows));
+  }
+
+  const csv = await file.text();
+  const parsed = Papa.parse<Record<string, unknown>>(csv, { header: true, skipEmptyLines: true });
+  const parseErrors = parsed.errors.map((error) => ({
+    row: (error.row ?? 0) + 2,
+    message: error.message
+  }));
+  const preview = previewFromRows(parsed.data, csv);
+  return { ...preview, errors: [...parseErrors, ...preview.errors] };
+}
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [productForm, setProductForm] = useState<ProductForm>(emptyProductForm);
-  const [variantForm, setVariantForm] = useState<VariantForm>(emptyVariantForm);
+  const queryClient = useQueryClient();
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importErrors, setImportErrors] = useState<Array<{ row: number; message: string }>>([]);
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importErrors, setImportErrors] = useState<ImportError[]>([]);
+  const productForm = useForm<ProductInput>({
+    resolver: zodResolver(productInputSchema),
+    defaultValues: emptyProductForm
+  });
+  const variantForm = useForm<ProductVariantInput>({
+    resolver: zodResolver(productVariantInputSchema),
+    defaultValues: emptyVariantForm
+  });
+  const selectedVariantProductId = variantForm.watch("productId");
+  const productsQuery = useQuery({
+    queryKey: ["products"],
+    queryFn: () => fetchJson<{ products: Product[] }>("/api/products", { cache: "no-store" })
+  });
+  const rawProducts = productsQuery.data?.products;
+  const products = useMemo(() => rawProducts ?? [], [rawProducts]);
+
+  useEffect(() => {
+    if (!selectedVariantProductId && products[0]?.id) {
+      variantForm.setValue("productId", products[0].id, { shouldValidate: true });
+    }
+  }, [products, selectedVariantProductId, variantForm]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -69,111 +130,99 @@ export default function ProductsPage() {
     );
   }, [products, search]);
 
-  async function loadProducts() {
-    const response = await fetch("/api/products", { cache: "no-store" });
-    const payload = (await response.json()) as { products?: Product[]; error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось загрузить товары.");
-    } else {
-      const nextProducts = payload.products ?? [];
-      setProducts(nextProducts);
-      setVariantForm((current) => ({ ...current, productId: current.productId || nextProducts[0]?.id || "" }));
-    }
-    setLoading(false);
-  }
+  const productMutation = useMutation({
+    mutationFn: (values: ProductInput) =>
+      fetchJson<{ product: Product }>(editingProductId ? `/api/products/${editingProductId}` : "/api/products", {
+        method: editingProductId ? "PUT" : "POST",
+        body: JSON.stringify(values)
+      }),
+    onSuccess: async () => {
+      toast.success(editingProductId ? "Товар обновлён." : "Товар создан.");
+      setEditingProductId(null);
+      productForm.reset(emptyProductForm);
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось сохранить товар.")
+  });
 
-  useEffect(() => {
-    void loadProducts();
-  }, []);
+  const variantMutation = useMutation({
+    mutationFn: (values: ProductVariantInput) =>
+      fetchJson<{ variant: Variant }>(
+        editingVariantId ? `/api/product-variants/${editingVariantId}` : `/api/products/${values.productId}/variants`,
+        {
+          method: editingVariantId ? "PUT" : "POST",
+          body: JSON.stringify(values)
+        }
+      ),
+    onSuccess: async () => {
+      toast.success(editingVariantId ? "Вариант обновлён." : "Вариант создан.");
+      setEditingVariantId(null);
+      variantForm.reset({ ...emptyVariantForm, productId: variantForm.getValues("productId") });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось сохранить вариант.")
+  });
 
-  async function saveProduct(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setMessage(null);
-    const response = await fetch(productForm.id ? `/api/products/${productForm.id}` : "/api/products", {
-      method: productForm.id ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(productForm)
-    });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось сохранить товар.");
-      return;
-    }
-    setMessage(productForm.id ? "Товар обновлён." : "Товар создан.");
-    setProductForm(emptyProductForm);
-    await loadProducts();
-  }
+  const deactivateMutation = useMutation({
+    mutationFn: ({ url }: { url: string; successMessage: string }) => fetchJson(url, { method: "DELETE" }),
+    onSuccess: async (_payload, variables) => {
+      toast.success(variables.successMessage);
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось сделать запись недоступной.")
+  });
 
-  async function saveVariant(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setMessage(null);
-    const response = await fetch(
-      variantForm.id ? `/api/product-variants/${variantForm.id}` : `/api/products/${variantForm.productId}/variants`,
-      {
-        method: variantForm.id ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(variantForm)
+  const importMutation = useMutation({
+    mutationFn: (csv: string) =>
+      fetchJson<{
+        imported?: number;
+        productsCreated?: number;
+        variantsCreated?: number;
+        errors?: ImportError[];
+      }>("/api/products/import", {
+        method: "POST",
+        body: JSON.stringify({ csv })
+      }),
+    onSuccess: async (payload) => {
+      if (payload.errors && payload.errors.length > 0) {
+        setImportErrors(payload.errors);
+        toast.error("Исправьте ошибки в файле и загрузите его снова.");
+        return;
       }
-    );
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось сохранить вариант.");
-      return;
-    }
-    setMessage(variantForm.id ? "Вариант обновлён." : "Вариант создан.");
-    setVariantForm((current) => ({ ...emptyVariantForm, productId: current.productId }));
-    await loadProducts();
-  }
+      setImportFile(null);
+      setImportPreview(null);
+      setImportErrors([]);
+      toast.success(`Импортировано: товаров ${payload.productsCreated ?? 0}, вариантов ${payload.variantsCreated ?? 0}.`);
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось импортировать товары.")
+  });
 
-  async function deactivate(url: string, successMessage: string) {
-    setError(null);
-    setMessage(null);
-    const response = await fetch(url, { method: "DELETE" });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось сделать запись недоступной.");
-      return;
-    }
-    setMessage(successMessage);
-    await loadProducts();
-  }
-
-  async function importProducts(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setMessage(null);
+  async function handleImportFile(file: File | null) {
+    setImportFile(file);
+    setImportPreview(null);
     setImportErrors([]);
-    if (!importFile) {
-      setError("Выберите CSV-файл.");
+    if (!file) {
       return;
     }
-    const csv = await importFile.text();
-    const response = await fetch("/api/products/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ csv })
+    const preview = await readProductImportFile(file);
+    setImportPreview(preview);
+    setImportErrors(preview.errors);
+  }
+
+  function editProduct(product: Product) {
+    setEditingProductId(product.id);
+    productForm.reset({ sku: product.sku, name: product.name, barcode: product.barcode ?? "" });
+  }
+
+  function editVariant(product: Product, variant: Variant) {
+    setEditingVariantId(variant.id);
+    variantForm.reset({
+      productId: product.id,
+      sku: variant.sku,
+      name: variant.name,
+      barcode: variant.barcode ?? ""
     });
-    const payload = (await response.json()) as {
-      imported?: number;
-      productsCreated?: number;
-      variantsCreated?: number;
-      errors?: Array<{ row: number; message: string }>;
-      error?: string;
-    };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось импортировать товары.");
-      return;
-    }
-    if (payload.errors && payload.errors.length > 0) {
-      setImportErrors(payload.errors);
-      setError("Исправьте ошибки в файле и загрузите его снова.");
-      return;
-    }
-    setImportFile(null);
-    setMessage(`Импортировано: товаров ${payload.productsCreated ?? 0}, вариантов ${payload.variantsCreated ?? 0}.`);
-    await loadProducts();
   }
 
   const columns: ColumnDef<Product, unknown>[] = [
@@ -181,19 +230,19 @@ export default function ProductsPage() {
       id: "sku",
       header: "SKU",
       cell: ({ row }) => <span className="font-semibold">{row.original.sku}</span>,
-      meta: { minWidth: "150px" }
+      meta: { minWidth: "150px", sortValue: (row) => row.sku }
     },
     {
       id: "name",
       header: commonText.name,
       cell: ({ row }) => row.original.name,
-      meta: { minWidth: "220px" }
+      meta: { minWidth: "220px", sortValue: (row) => row.name }
     },
     {
       id: "barcode",
       header: commonText.barcode,
       cell: ({ row }) => row.original.barcode ?? commonText.none,
-      meta: { minWidth: "170px" }
+      meta: { minWidth: "170px", sortValue: (row) => row.barcode ?? "" }
     },
     {
       id: "variants",
@@ -214,22 +263,15 @@ export default function ProductsPage() {
                   </div>
                   <ActionMenu
                     items={[
-                      {
-                        label: commonText.edit,
-                        onSelect: () =>
-                          setVariantForm({
-                            id: variant.id,
-                            productId: row.original.id,
-                            sku: variant.sku,
-                            name: variant.name,
-                            barcode: variant.barcode ?? ""
-                          })
-                      },
+                      { label: commonText.edit, onSelect: () => editVariant(row.original, variant) },
                       {
                         label: commonText.deactivate,
                         danger: true,
                         onSelect: () =>
-                          void deactivate(`/api/product-variants/${variant.id}`, "Вариант сделан недоступным.")
+                          deactivateMutation.mutate({
+                            url: `/api/product-variants/${variant.id}`,
+                            successMessage: "Вариант сделан недоступным."
+                          })
                       }
                     ]}
                   />
@@ -246,20 +288,15 @@ export default function ProductsPage() {
       cell: ({ row }) => (
         <ActionMenu
           items={[
-            {
-              label: commonText.edit,
-              onSelect: () =>
-                setProductForm({
-                  id: row.original.id,
-                  sku: row.original.sku,
-                  name: row.original.name,
-                  barcode: row.original.barcode ?? ""
-                })
-            },
+            { label: commonText.edit, onSelect: () => editProduct(row.original) },
             {
               label: commonText.deactivate,
               danger: true,
-              onSelect: () => void deactivate(`/api/products/${row.original.id}`, "Товар сделан недоступным.")
+              onSelect: () =>
+                deactivateMutation.mutate({
+                  url: `/api/products/${row.original.id}`,
+                  successMessage: "Товар сделан недоступным."
+                })
             }
           ]}
         />
@@ -274,30 +311,52 @@ export default function ProductsPage() {
         title="Товары"
         description="Создавайте товары, варианты и штрихкоды для приёмки, размещения и сборки."
       />
-      <NoticeBanner kind="error" message={error} />
-      <NoticeBanner kind="success" message={message} />
+      <NoticeBanner
+        kind="error"
+        message={productsQuery.error instanceof Error ? productsQuery.error.message : null}
+      />
 
-      <form onSubmit={importProducts} className={`${cardClass} mb-6`}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!importPreview || importPreview.errors.length > 0) {
+            toast.error(importPreview ? "Исправьте ошибки перед импортом." : "Выберите CSV или XLSX-файл.");
+            return;
+          }
+          importMutation.mutate(importPreview.csv);
+        }}
+        className={`${cardClass} mb-6`}
+      >
         <div className="mb-3">
-          <h2 className="text-base font-semibold">Импорт из CSV</h2>
+          <h2 className="text-base font-semibold">Импорт товаров</h2>
           <p className="text-sm text-muted">
-            Колонки: sku, name, barcode, barcodes, variant_sku, variant_name, variant_barcode, variant_barcodes.
-            Дополнительные штрихкоды разделяйте точкой с запятой.
+            Поддерживаются CSV и XLSX. Колонки: sku, name, barcode, barcodes, variant_sku, variant_name,
+            variant_barcode, variant_barcodes.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-          <Field label="CSV-файл">
+          <Field label="Файл импорта">
             <input
               className={inputClass}
               type="file"
-              accept=".csv,text/csv"
-              onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+              accept=".csv,text/csv,.xlsx,.xls"
+              onChange={(event) => void handleImportFile(event.target.files?.[0] ?? null)}
             />
           </Field>
-          <button className={buttonClass} type="submit" disabled={!importFile}>
+          <button
+            className={buttonClass}
+            type="submit"
+            disabled={!importFile || !importPreview || importPreview.errors.length > 0 || importMutation.isPending}
+          >
             Импортировать
           </button>
         </div>
+        {importPreview ? (
+          <div className="mt-4 rounded-lg border border-border bg-surface p-3 text-sm">
+            <div className="font-semibold">Предпросмотр: {importPreview.rows} строк</div>
+            <div className="mt-1 text-muted">Колонки: {importPreview.columns.join(", ") || "не найдены"}</div>
+          </div>
+        ) : null}
         {importErrors.length > 0 ? (
           <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             <div className="font-semibold">Ошибки импорта</div>
@@ -314,108 +373,84 @@ export default function ProductsPage() {
       </form>
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <form onSubmit={saveProduct} className={cardClass}>
+        <form onSubmit={productForm.handleSubmit((values) => productMutation.mutate(values))} className={cardClass}>
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold">{productForm.id ? "Изменить товар" : "Новый товар"}</h2>
+              <h2 className="text-base font-semibold">{editingProductId ? "Изменить товар" : "Новый товар"}</h2>
               <p className="text-sm text-muted">SKU и штрихкод должны быть уникальными для сканирования.</p>
             </div>
-            {productForm.id ? (
-              <button className={secondaryButtonClass} type="button" onClick={() => setProductForm(emptyProductForm)}>
+            {editingProductId ? (
+              <button
+                className={secondaryButtonClass}
+                type="button"
+                onClick={() => {
+                  setEditingProductId(null);
+                  productForm.reset(emptyProductForm);
+                }}
+              >
                 {commonText.cancel}
               </button>
             ) : null}
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <Field label="SKU">
-              <input
-                className={inputClass}
-                value={productForm.sku}
-                onChange={(event) => setProductForm((current) => ({ ...current, sku: event.target.value }))}
-                placeholder="SKU-001"
-                required
-              />
+            <Field label="SKU" error={productForm.formState.errors.sku?.message}>
+              <input className={inputClass} {...productForm.register("sku")} placeholder="SKU-001" />
             </Field>
-            <Field label={commonText.name}>
-              <input
-                className={inputClass}
-                value={productForm.name}
-                onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="Название товара"
-                required
-              />
+            <Field label={commonText.name} error={productForm.formState.errors.name?.message}>
+              <input className={inputClass} {...productForm.register("name")} placeholder="Название товара" />
             </Field>
-            <Field label={commonText.barcode}>
-              <input
-                className={inputClass}
-                value={productForm.barcode}
-                onChange={(event) => setProductForm((current) => ({ ...current, barcode: event.target.value }))}
-                placeholder="Опционально"
-              />
+            <Field label={commonText.barcode} error={productForm.formState.errors.barcode?.message}>
+              <input className={inputClass} {...productForm.register("barcode")} placeholder="Опционально" />
             </Field>
           </div>
           <div className="mt-4">
-            <button className={buttonClass} type="submit">
-              {productForm.id ? commonText.save : "Создать товар"}
+            <button className={buttonClass} disabled={productMutation.isPending} type="submit">
+              {editingProductId ? commonText.save : "Создать товар"}
             </button>
           </div>
         </form>
 
-        <form onSubmit={saveVariant} className={cardClass}>
+        <form onSubmit={variantForm.handleSubmit((values) => variantMutation.mutate(values))} className={cardClass}>
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold">{variantForm.id ? "Изменить вариант" : "Новый вариант"}</h2>
+              <h2 className="text-base font-semibold">{editingVariantId ? "Изменить вариант" : "Новый вариант"}</h2>
               <p className="text-sm text-muted">Варианты нужны, если размер, цвет или упаковка имеют свой SKU.</p>
             </div>
-            {variantForm.id ? (
+            {editingVariantId ? (
               <button
                 className={secondaryButtonClass}
                 type="button"
-                onClick={() => setVariantForm((current) => ({ ...emptyVariantForm, productId: current.productId }))}
+                onClick={() => {
+                  setEditingVariantId(null);
+                  variantForm.reset({ ...emptyVariantForm, productId: variantForm.getValues("productId") });
+                }}
               >
                 {commonText.cancel}
               </button>
             ) : null}
           </div>
           <div className="grid gap-3 md:grid-cols-4">
-            <Field label={commonText.product}>
+            <Field label={commonText.product} error={variantForm.formState.errors.productId?.message}>
               <Select
-                value={variantForm.productId}
-                onValueChange={(productId) => setVariantForm((current) => ({ ...current, productId }))}
+                value={variantForm.watch("productId")}
+                onValueChange={(productId) => variantForm.setValue("productId", productId, { shouldValidate: true })}
                 placeholder="Выберите товар"
                 options={products.map((product) => ({ value: product.id, label: product.sku }))}
               />
             </Field>
-            <Field label="SKU">
-              <input
-                className={inputClass}
-                value={variantForm.sku}
-                onChange={(event) => setVariantForm((current) => ({ ...current, sku: event.target.value }))}
-                placeholder="SKU-001-BLUE"
-                required
-              />
+            <Field label="SKU" error={variantForm.formState.errors.sku?.message}>
+              <input className={inputClass} {...variantForm.register("sku")} placeholder="SKU-001-BLUE" />
             </Field>
-            <Field label={commonText.name}>
-              <input
-                className={inputClass}
-                value={variantForm.name}
-                onChange={(event) => setVariantForm((current) => ({ ...current, name: event.target.value }))}
-                placeholder="Синий"
-                required
-              />
+            <Field label={commonText.name} error={variantForm.formState.errors.name?.message}>
+              <input className={inputClass} {...variantForm.register("name")} placeholder="Синий" />
             </Field>
-            <Field label={commonText.barcode}>
-              <input
-                className={inputClass}
-                value={variantForm.barcode}
-                onChange={(event) => setVariantForm((current) => ({ ...current, barcode: event.target.value }))}
-                placeholder="Опционально"
-              />
+            <Field label={commonText.barcode} error={variantForm.formState.errors.barcode?.message}>
+              <input className={inputClass} {...variantForm.register("barcode")} placeholder="Опционально" />
             </Field>
           </div>
           <div className="mt-4">
-            <button className={buttonClass} type="submit" disabled={products.length === 0}>
-              {variantForm.id ? commonText.save : "Создать вариант"}
+            <button className={buttonClass} type="submit" disabled={products.length === 0 || variantMutation.isPending}>
+              {editingVariantId ? commonText.save : "Создать вариант"}
             </button>
           </div>
         </form>
@@ -432,11 +467,11 @@ export default function ProductsPage() {
         </div>
       ) : null}
 
-      {loading ? <LoadingState message="Загрузка товаров..." /> : null}
-      {!loading && products.length === 0 ? (
+      {productsQuery.isLoading ? <LoadingState message="Загрузка товаров..." /> : null}
+      {!productsQuery.isLoading && products.length === 0 ? (
         <EmptyState title={emptyStates.productsTitle} body={emptyStates.productsBody} />
       ) : null}
-      {!loading && products.length > 0 && filteredProducts.length === 0 ? (
+      {!productsQuery.isLoading && products.length > 0 && filteredProducts.length === 0 ? (
         <EmptyState title="Товары не найдены" body="Попробуйте изменить строку поиска." />
       ) : null}
 

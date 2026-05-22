@@ -56,7 +56,7 @@ export default function InventoryPage() {
         id: "warehouse",
         header: commonText.warehouse,
         cell: ({ row }) => row.original.warehouse.code,
-        meta: { minWidth: "120px" }
+        meta: { minWidth: "120px", sortValue: (row) => row.warehouse.code }
       },
       {
         id: "location",
@@ -67,7 +67,7 @@ export default function InventoryPage() {
             <div className="mt-1 text-xs text-muted">{labelFor(locationTypeLabels, row.original.location.type)}</div>
           </div>
         ),
-        meta: { minWidth: "150px" }
+        meta: { minWidth: "150px", sortValue: (row) => row.location.code }
       },
       {
         id: "product",
@@ -78,7 +78,7 @@ export default function InventoryPage() {
             <div className="mt-1 max-w-xs text-xs leading-5 text-muted">{row.original.product.name}</div>
           </div>
         ),
-        meta: { minWidth: "220px" }
+        meta: { minWidth: "220px", sortValue: (row) => row.product.sku }
       },
       {
         id: "variant",
@@ -90,13 +90,13 @@ export default function InventoryPage() {
         id: "onHand",
         header: "В наличии",
         cell: ({ row }) => <span className="font-semibold tabular-nums">{row.original.onHandQty}</span>,
-        meta: { align: "right", minWidth: "110px" }
+        meta: { align: "right", minWidth: "110px", sortValue: (row) => row.onHandQty }
       },
       {
         id: "available",
         header: "Доступно",
         cell: ({ row }) => <span className="font-semibold tabular-nums text-emerald-700">{row.original.availableQty}</span>,
-        meta: { align: "right", minWidth: "110px" }
+        meta: { align: "right", minWidth: "110px", sortValue: (row) => row.availableQty }
       },
       {
         id: "unavailable",
@@ -112,7 +112,7 @@ export default function InventoryPage() {
             ) : null}
           </div>
         ),
-        meta: { align: "right", minWidth: "230px" }
+        meta: { align: "right", minWidth: "230px", sortValue: (row) => row.unavailableQty }
       }
     ],
     []

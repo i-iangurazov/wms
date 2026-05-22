@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable, Select } from "@/components/ui";
+import { formatWmsDateTime } from "@/lib/dateFormat";
 import {
   commonText,
   emptyStates,
@@ -60,8 +61,8 @@ export default function MovementsPage() {
       {
         id: "createdAt",
         header: "Время",
-        cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
-        meta: { minWidth: "180px" }
+        cell: ({ row }) => formatWmsDateTime(row.original.createdAt),
+        meta: { minWidth: "180px", sortValue: (row) => new Date(row.createdAt).getTime() }
       },
       {
         id: "type",
@@ -74,7 +75,7 @@ export default function MovementsPage() {
             ) : null}
           </div>
         ),
-        meta: { minWidth: "180px" }
+        meta: { minWidth: "180px", sortValue: (row) => labelFor(movementTypeLabels, row.type) }
       },
       {
         id: "product",
@@ -87,7 +88,7 @@ export default function MovementsPage() {
             </div>
           </div>
         ),
-        meta: { minWidth: "220px" }
+        meta: { minWidth: "220px", sortValue: (row) => row.product.sku }
       },
       {
         id: "from",
@@ -105,13 +106,13 @@ export default function MovementsPage() {
         id: "quantity",
         header: "Кол-во",
         cell: ({ row }) => <span className="font-semibold tabular-nums">{row.original.quantity}</span>,
-        meta: { align: "right", minWidth: "100px" }
+        meta: { align: "right", minWidth: "100px", sortValue: (row) => row.quantity }
       },
       {
         id: "createdBy",
         header: "Сотрудник",
         cell: ({ row }) => row.original.createdBy.name,
-        meta: { minWidth: "160px" }
+        meta: { minWidth: "160px", sortValue: (row) => row.createdBy.name }
       }
     ],
     []

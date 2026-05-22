@@ -15,6 +15,7 @@ import {
   Warehouse,
   type LucideIcon
 } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 const navIcons: Record<string, LucideIcon> = {
   "/wms": LayoutDashboard,
@@ -43,16 +44,18 @@ export function NavItem({ href, label }: { href: string; label: string }) {
       ].join(" ")}
       aria-current={active ? "page" : undefined}
     >
-      <span
-        className={[
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-xs font-bold",
-          active
-            ? "border-teal-200 text-accent"
-            : "border-border text-muted group-hover:border-accent group-hover:text-accent"
-        ].join(" ")}
-      >
-        <Icon className="h-4 w-4" aria-hidden="true" />
-      </span>
+      <Tooltip content={label}>
+        <span
+          className={[
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border bg-white text-xs font-bold",
+            active
+              ? "border-teal-200 text-accent"
+              : "border-border text-muted group-hover:border-accent group-hover:text-accent"
+          ].join(" ")}
+        >
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
+      </Tooltip>
       <span>{label}</span>
     </Link>
   );

@@ -23,17 +23,19 @@ Adopt these libraries because they directly address current gaps:
 | Library | Why | Status |
 | --- | --- | --- |
 | `lucide-react` | Real navigation, empty-state, action, and status icons. | INSTALLED / IN USE |
-| `@radix-ui/react-select` | Accessible, polished Select primitive replacing browser-default selects. | INSTALLED / PILOTED |
+| `@radix-ui/react-select` | Accessible, polished Select primitive replacing browser-default selects. | INSTALLED / IN USE |
 | `@radix-ui/react-dialog` | Modal/dialog foundation for destructive confirmations and guided admin flows. | INSTALLED / PRIMITIVE READY |
 | `@radix-ui/react-dropdown-menu` | Row/action menus and compact command surfaces. | INSTALLED / PRIMITIVE READY |
 | `@radix-ui/react-tabs` | Settings/product page decomposition without overwhelming long pages. | INSTALLED / PRIMITIVE READY |
 | `@radix-ui/react-popover` | Scanner help, date/filter popovers, contextual explanations. | INSTALLED |
-| `react-hook-form` | Predictable form state and field-level validation. | INSTALLED / NOT YET MIGRATED |
-| `zod` | Shared validation schemas and Russian error messages. | INSTALLED / NOT YET MIGRATED |
+| `@radix-ui/react-tooltip` | Contextual help for compact icon/control surfaces. | INSTALLED / IN USE |
+| `react-hook-form` | Predictable form state and field-level validation. | INSTALLED / PRODUCT + WAREHOUSE FORMS |
+| `zod` / `@hookform/resolvers` | Shared validation schemas and Russian error messages across UI/API. | INSTALLED / FOUNDATION IN USE |
+| `@tanstack/react-query` | Server state, mutation state, invalidation, and refetching. | INSTALLED / PRODUCT + WAREHOUSE SCREENS |
 | `@tanstack/react-table` | Real data table foundation for stock, movements, audit, products, settings, and worker line tables. | INSTALLED / IN USE |
-| `sonner` | Consistent Russian toast feedback. | INSTALLED / NOT YET MIGRATED |
-| `date-fns` | Date formatting for movements, audit, dashboard. | INSTALLED / NOT YET MIGRATED |
-| `papaparse` / `xlsx` | Real product import parsing beyond pasted CSV text. | INSTALLED / NOT YET MIGRATED |
+| `sonner` | Consistent Russian toast feedback. | INSTALLED / PRODUCT + WAREHOUSE MUTATIONS |
+| `date-fns` | Date formatting for movements, audit, dashboard. | INSTALLED / MOVEMENTS + AUDIT |
+| `papaparse` / `xlsx` | Real product import parsing beyond pasted CSV text. | INSTALLED / IMPORT PREVIEW IN USE |
 | `@playwright/test` | Browser workflow and mobile/scanner E2E. | INSTALLED / FIRST SUITE PASSING |
 
 ## 3. Component System Plan
@@ -217,7 +219,7 @@ Current limitation: the operational E2E uses API setup/execution for parts of re
 - Replace fake navigation icons.
 - Replace empty-state circle.
 - Introduce Radix Select component.
-- Status: PARTIAL. Libraries and shared primitives exist; only a pilot page uses Radix Select so far.
+- Status: PARTIAL. Required libraries are installed and active. Shared primitives exist, Radix Select is used across active WMS forms, Radix Tooltip is used in navigation, React Query/Sonner are wired globally, and product/warehouse forms now use Hook Form plus Zod. Remaining work is migrating every operational workflow form to the same stack.
 
 ### UI-R2: Dashboard Command Center
 
@@ -231,7 +233,7 @@ Current limitation: the operational E2E uses API setup/execution for parts of re
 - Replace native selects in active WMS pages with shared `Select`.
 - Replace custom tables with shared `DataTable`.
 - Replace page-specific actions with `Button`, `Dropdown`, `Dialog`.
-- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`, active page tables have been migrated to the shared TanStack `DataTable`, and a shared `ActionMenu` is now used for the busiest admin row actions. Dialog/modal and full row-action migration remain open.
+- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`, active page tables have been migrated to the shared TanStack `DataTable`, product/warehouse forms use React Hook Form and shared Zod schemas, and a shared `ActionMenu` is now used for the busiest admin row actions. Dialog/modal and full workflow-form migration remain open.
 
 ### UI-R4: Worker Workflow Redesign
 

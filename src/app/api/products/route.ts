@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getRequestContext } from "@/server/auth";
-import { jsonCreated, jsonError, jsonOk, parseJsonObject, readString } from "@/server/http";
+import { jsonCreated, jsonError, jsonOk, parseJsonObject } from "@/server/http";
 import { createProduct, listProducts } from "@/server/services/productService";
+import { productInputSchema } from "@/lib/wmsSchemas";
+import { parseServerSchema } from "@/server/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +21,7 @@ export async function POST(request: NextRequest) {
   try {
     const context = await getRequestContext(request);
     const body = await parseJsonObject(request);
-    const product = await createProduct(context, {
-      sku: readString(body, "sku"),
-      name: readString(body, "name"),
-      barcode: readString(body, "barcode", false)
-    });
+    const product = await createProduct(context, parseServerSchema(productInputSchema, body));
     return jsonCreated({ product });
   } catch (error) {
     return jsonError(error);

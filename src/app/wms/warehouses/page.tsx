@@ -1,14 +1,20 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ActionMenu, DataTable, Select } from "@/components/ui";
+import { fetchJson } from "@/lib/apiClient";
 import { commonText, emptyStates } from "@/lib/wmsText";
+import { warehouseInputSchema, type WarehouseInput } from "@/lib/wmsSchemas";
 
 type Warehouse = {
   id: string;
@@ -18,82 +24,52 @@ type Warehouse = {
   _count?: { locations: number };
 };
 
-type FormState = {
-  code: string;
-  name: string;
-  status: "ACTIVE" | "INACTIVE";
-};
-
-const emptyForm: FormState = { code: "", name: "", status: "ACTIVE" };
+const emptyForm: WarehouseInput = { code: "", name: "", status: "ACTIVE" };
 
 export default function WarehousesPage() {
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const editing = useMemo(
-    () => warehouses.find((warehouse) => warehouse.id === editingId),
-    [editingId, warehouses]
-  );
-
-  async function loadWarehouses() {
-    setLoading(true);
-    setError(null);
-    const response = await fetch("/api/warehouses", { cache: "no-store" });
-    const payload = (await response.json()) as { warehouses?: Warehouse[]; error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось загрузить склады.");
-    } else {
-      setWarehouses(payload.warehouses ?? []);
-    }
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    void loadWarehouses();
-  }, []);
+  const form = useForm<WarehouseInput>({
+    resolver: zodResolver(warehouseInputSchema),
+    defaultValues: emptyForm
+  });
+  const status = form.watch("status");
+  const warehousesQuery = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: () => fetchJson<{ warehouses: Warehouse[] }>("/api/warehouses", { cache: "no-store" })
+  });
+  const warehouses = warehousesQuery.data?.warehouses ?? [];
+  const editing = warehouses.find((warehouse) => warehouse.id === editingId);
+  const saveMutation = useMutation({
+    mutationFn: (values: WarehouseInput) =>
+      fetchJson<{ warehouse: Warehouse }>(editingId ? `/api/warehouses/${editingId}` : "/api/warehouses", {
+        method: editingId ? "PUT" : "POST",
+        body: JSON.stringify(values)
+      }),
+    onSuccess: async () => {
+      toast.success(editingId ? "Склад обновлён." : "Склад создан.");
+      resetForm();
+      await queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось сохранить склад.")
+  });
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => fetchJson<{ warehouse: Warehouse }>(`/api/warehouses/${id}`, { method: "DELETE" }),
+    onSuccess: async () => {
+      toast.success("Склад сделан недоступным.");
+      await queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Не удалось сделать склад недоступным.")
+  });
 
   function startEdit(warehouse: Warehouse) {
     setEditingId(warehouse.id);
-    setForm({ code: warehouse.code, name: warehouse.name, status: warehouse.status });
+    form.reset({ code: warehouse.code, name: warehouse.name, status: warehouse.status });
   }
 
   function resetForm() {
     setEditingId(null);
-    setForm(emptyForm);
-  }
-
-  async function saveWarehouse(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-    const response = await fetch(editingId ? `/api/warehouses/${editingId}` : "/api/warehouses", {
-      method: editingId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось сохранить склад.");
-    } else {
-      resetForm();
-      await loadWarehouses();
-    }
-    setSaving(false);
-  }
-
-  async function deactivateWarehouse(id: string) {
-    setError(null);
-    const response = await fetch(`/api/warehouses/${id}`, { method: "DELETE" });
-    const payload = (await response.json()) as { error?: string };
-    if (!response.ok) {
-      setError(payload.error ?? "Не удалось сделать склад недоступным.");
-    } else {
-      await loadWarehouses();
-    }
+    form.reset(emptyForm);
   }
 
   const columns: ColumnDef<Warehouse, unknown>[] = [
@@ -101,25 +77,25 @@ export default function WarehousesPage() {
       id: "code",
       header: commonText.code,
       cell: ({ row }) => <span className="font-medium">{row.original.code}</span>,
-      meta: { minWidth: "130px" }
+      meta: { minWidth: "130px", sortValue: (row) => row.code }
     },
     {
       id: "name",
       header: commonText.name,
       cell: ({ row }) => row.original.name,
-      meta: { minWidth: "220px" }
+      meta: { minWidth: "220px", sortValue: (row) => row.name }
     },
     {
       id: "locations",
       header: "Ячейки",
       cell: ({ row }) => <span className="tabular-nums">{row.original._count?.locations ?? 0}</span>,
-      meta: { minWidth: "100px" }
+      meta: { minWidth: "100px", sortValue: (row) => row._count?.locations ?? 0 }
     },
     {
       id: "status",
       header: commonText.status,
       cell: ({ row }) => <StatusBadge value={row.original.status} />,
-      meta: { minWidth: "130px" }
+      meta: { minWidth: "130px", sortValue: (row) => row.status }
     },
     {
       id: "actions",
@@ -132,7 +108,7 @@ export default function WarehousesPage() {
               label: commonText.deactivate,
               danger: true,
               disabled: row.original.status === "INACTIVE",
-              onSelect: () => void deactivateWarehouse(row.original.id)
+              onSelect: () => deactivateMutation.mutate(row.original.id)
             }
           ]}
         />
@@ -148,30 +124,34 @@ export default function WarehousesPage() {
         description="Создавайте склады и управляйте их доступностью. История операций сохраняется."
       />
 
-      <form onSubmit={saveWarehouse} className={`${cardClass} mb-6`}>
+      <form onSubmit={form.handleSubmit((values) => saveMutation.mutate(values))} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-4">
           <Field label={commonText.code}>
             <input
               className={inputClass}
-              value={form.code}
-              onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))}
+              {...form.register("code")}
               placeholder="WH-1"
-              required
             />
+            {form.formState.errors.code ? (
+              <span className="mt-1.5 block text-xs font-medium text-danger">{form.formState.errors.code.message}</span>
+            ) : null}
           </Field>
           <Field label={commonText.name}>
             <input
               className={inputClass}
-              value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              {...form.register("name")}
               placeholder="Основной склад"
-              required
             />
+            {form.formState.errors.name ? (
+              <span className="mt-1.5 block text-xs font-medium text-danger">{form.formState.errors.name.message}</span>
+            ) : null}
           </Field>
           <Field label={commonText.status}>
             <Select
-              value={form.status}
-              onValueChange={(status) => setForm((current) => ({ ...current, status: status as FormState["status"] }))}
+              value={status}
+              onValueChange={(nextStatus) =>
+                form.setValue("status", nextStatus as WarehouseInput["status"], { shouldValidate: true })
+              }
               options={[
                 { value: "ACTIVE", label: "Активно" },
                 { value: "INACTIVE", label: "Недоступно" }
@@ -179,7 +159,7 @@ export default function WarehousesPage() {
             />
           </Field>
           <div className="flex items-end gap-2">
-            <button className={buttonClass} disabled={saving} type="submit">
+            <button className={buttonClass} disabled={saveMutation.isPending} type="submit">
               {editing ? commonText.update : commonText.create}
             </button>
             {editing ? (
@@ -191,9 +171,13 @@ export default function WarehousesPage() {
         </div>
       </form>
 
-      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
-      {loading ? <LoadingState message="Загрузка складов..." /> : null}
-      {!loading && warehouses.length === 0 ? (
+      {warehousesQuery.error ? (
+        <div className="mb-4">
+          <ErrorState message={warehousesQuery.error instanceof Error ? warehousesQuery.error.message : "Не удалось загрузить склады."} />
+        </div>
+      ) : null}
+      {warehousesQuery.isLoading ? <LoadingState message="Загрузка складов..." /> : null}
+      {!warehousesQuery.isLoading && warehouses.length === 0 ? (
         <EmptyState title={emptyStates.warehousesTitle} body={emptyStates.warehousesBody} />
       ) : null}
 

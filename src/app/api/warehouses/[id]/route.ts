@@ -1,12 +1,13 @@
 import type { NextRequest } from "next/server";
 import { getRequestContext } from "@/server/auth";
-import { jsonError, jsonOk, parseJsonObject, readString } from "@/server/http";
-import { parseWarehouseStatus } from "@/server/enumParsing";
+import { jsonError, jsonOk, parseJsonObject } from "@/server/http";
 import {
   deactivateWarehouse,
   getWarehouse,
   updateWarehouse
 } from "@/server/services/warehouseService";
+import { warehouseInputSchema } from "@/lib/wmsSchemas";
+import { parseServerSchema } from "@/server/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const context = await getRequestContext(request);
     const body = await parseJsonObject(request);
-    const warehouse = await updateWarehouse(context, params.id, {
-      code: readString(body, "code", false),
-      name: readString(body, "name", false),
-      status: parseWarehouseStatus(body.status)
-    });
+    const warehouse = await updateWarehouse(context, params.id, parseServerSchema(warehouseInputSchema, body));
     return jsonOk({ warehouse });
   } catch (error) {
     return jsonError(error);

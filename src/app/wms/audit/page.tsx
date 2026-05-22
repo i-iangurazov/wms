@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { cardClass, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { DataTable, Select } from "@/components/ui";
+import { formatWmsDateTime } from "@/lib/dateFormat";
 import { auditActionLabels, auditEntityLabels, commonText, emptyStates, labelFor } from "@/lib/wmsText";
 
 type AuditLog = {
@@ -59,14 +60,14 @@ export default function AuditPage() {
       {
         id: "createdAt",
         header: "Время",
-        cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
-        meta: { minWidth: "180px" }
+        cell: ({ row }) => formatWmsDateTime(row.original.createdAt),
+        meta: { minWidth: "180px", sortValue: (row) => new Date(row.createdAt).getTime() }
       },
       {
         id: "action",
         header: "Действие",
         cell: ({ row }) => <span className="font-medium">{labelFor(auditActionLabels, row.original.action)}</span>,
-        meta: { minWidth: "190px" }
+        meta: { minWidth: "190px", sortValue: (row) => labelFor(auditActionLabels, row.action) }
       },
       {
         id: "entity",
@@ -77,7 +78,7 @@ export default function AuditPage() {
             <div className="mt-1 max-w-[220px] truncate text-xs text-muted">{row.original.entityId}</div>
           </div>
         ),
-        meta: { minWidth: "220px" }
+        meta: { minWidth: "220px", sortValue: (row) => labelFor(auditEntityLabels, row.entityType) }
       },
       {
         id: "details",
@@ -94,7 +95,7 @@ export default function AuditPage() {
             <div className="mt-1 text-xs text-muted">{row.original.user.email}</div>
           </div>
         ),
-        meta: { minWidth: "220px" }
+        meta: { minWidth: "220px", sortValue: (row) => row.user.name }
       }
     ],
     []

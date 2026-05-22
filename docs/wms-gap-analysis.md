@@ -1239,3 +1239,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - Architecture review: UI-only change; no stock, auth, permission, tenant-isolation, or ledger behavior changed.
 - Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
 - Remaining risk: responsive stacked rows are a foundation, not a complete scanner workflow redesign.
+
+#### Phase 45: Production Library Stack Adoption
+
+- Status: implemented and validated at foundation level.
+- What changed: added `docs/wms-library-adoption-plan.md`, installed missing `@radix-ui/react-tooltip`, `@hookform/resolvers`, `@tanstack/react-query`, and `@types/papaparse`; added root React Query provider and Sonner toaster; added shared API client, date formatter, Zod schemas, and server schema parser; migrated product and warehouse forms/API routes to shared Zod validation; migrated product and warehouse screens to React Query mutations and Russian toasts; added CSV/XLSX product import preview with Papaparse/XLSX; added Radix Tooltip primitive; extended `DataTable` with sortable headers and pagination.
+- UX review: product and warehouse workflows now feel more like a mature SaaS surface: field errors are local, success/failure feedback is immediate, import has preview and row errors, and tables expose sorting/pagination.
+- Architecture review: services remain authoritative for business rules; schema validation is an input layer and does not bypass stock, permission, tenant, or audit rules.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
+- Remaining risk: location, receiving, transfer, adjustment, cycle count, picking, users, and settings forms still need migration to React Hook Form/Zod/React Query. Playwright remains foundation-level for scanner workflows.
