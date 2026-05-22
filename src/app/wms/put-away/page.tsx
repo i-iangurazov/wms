@@ -30,11 +30,32 @@ type Balance = {
   product: Product;
   location: Location;
 };
+type PutawayWorkLine = {
+  id: string;
+  quantity: number;
+  completedQuantity: number;
+  status: string;
+  sourceLocation: Location;
+  destinationLocation: Location | null;
+  product: Product;
+};
+type PutawayWork = {
+  id: string;
+  status: string;
+  lines: PutawayWorkLine[];
+};
+type ReceivingSession = {
+  id: string;
+  reference: string | null;
+  status: string;
+};
 
 export default function PutAwayPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
+  const [work, setWork] = useState<PutawayWork[]>([]);
+  const [receivingSessions, setReceivingSessions] = useState<ReceivingSession[]>([]);
   const [form, setForm] = useState({ fromLocationId: "", toLocationId: "", productId: "", quantity: 1, note: "" });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,16 +79,27 @@ export default function PutAwayPage() {
   );
 
   async function loadData() {
-    const [locationResponse, productResponse, balanceResponse] = await Promise.all([
+    const [locationResponse, productResponse, balanceResponse, workResponse, receivingResponse] = await Promise.all([
       fetch("/api/warehouse-locations", { cache: "no-store" }),
       fetch("/api/products", { cache: "no-store" }),
-      fetch("/api/inventory/balances", { cache: "no-store" })
+      fetch("/api/inventory/balances", { cache: "no-store" }),
+      fetch("/api/put-away", { cache: "no-store" }),
+      fetch("/api/receiving/sessions", { cache: "no-store" })
     ]);
     const locationPayload = (await locationResponse.json()) as { locations?: Location[]; error?: string };
     const productPayload = (await productResponse.json()) as { products?: Product[]; error?: string };
     const balancePayload = (await balanceResponse.json()) as { balances?: Balance[]; error?: string };
-    if (!locationResponse.ok || !productResponse.ok || !balanceResponse.ok) {
-      setError(locationPayload.error ?? productPayload.error ?? balancePayload.error ?? "Не удалось загрузить размещение.");
+    const workPayload = (await workResponse.json()) as { work?: PutawayWork[]; error?: string };
+    const receivingPayload = (await receivingResponse.json()) as { sessions?: ReceivingSession[]; error?: string };
+    if (!locationResponse.ok || !productResponse.ok || !balanceResponse.ok || !workResponse.ok || !receivingResponse.ok) {
+      setError(
+        locationPayload.error ??
+          productPayload.error ??
+          balancePayload.error ??
+          workPayload.error ??
+          receivingPayload.error ??
+          "Не удалось загрузить размещение."
+      );
       return;
     }
     const nextLocations = locationPayload.locations ?? [];
@@ -75,6 +107,8 @@ export default function PutAwayPage() {
     setLocations(nextLocations);
     setProducts(nextProducts);
     setBalances(balancePayload.balances ?? []);
+    setWork(workPayload.work ?? []);
+    setReceivingSessions(receivingPayload.sessions ?? []);
     setForm((current) => ({
       ...current,
       fromLocationId: current.fromLocationId || nextLocations.find((location) => location.type === "RECEIVING")?.id || "",
@@ -113,6 +147,47 @@ export default function PutAwayPage() {
       setMessage("Товар размещён.");
       await loadData();
     }
+  }
+
+  async function generateWork(sessionId: string) {
+    setError(null);
+    setMessage(null);
+    const response = await fetch("/api/put-away", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "generate", sessionId })
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось создать задание на размещение.");
+      return;
+    }
+    setMessage("Задание на размещение создано.");
+    await loadData();
+  }
+
+  async function confirmWorkLine(line: PutawayWorkLine) {
+    setError(null);
+    setMessage(null);
+    const quantity = Math.max(line.quantity - line.completedQuantity, 1);
+    const response = await fetch("/api/put-away", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "confirmLine",
+        lineId: line.id,
+        toLocationId: line.destinationLocation?.id,
+        quantity,
+        idempotencyKey: createIdempotencyKey("putaway-line")
+      })
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось выполнить шаг размещения.");
+      return;
+    }
+    setMessage("Шаг размещения выполнен.");
+    await loadData();
   }
 
   return (
@@ -154,6 +229,43 @@ export default function PutAwayPage() {
                 ))}
               </div>
             )}
+            <div className="mt-5 border-t border-border pt-4">
+              <h3 className="mb-2 text-sm font-semibold">Создать задания из приёмки</h3>
+              <div className="space-y-2">
+                {receivingSessions
+                  .filter((session) => session.status === "COMPLETED" || session.status === "RECEIVING")
+                  .slice(0, 5)
+                  .map((session) => (
+                    <button
+                      key={session.id}
+                      className="block w-full rounded-md border border-border bg-white px-3 py-2 text-left text-sm hover:bg-surface"
+                      type="button"
+                      onClick={() => void generateWork(session.id)}
+                    >
+                      {session.reference ?? session.id.slice(0, 8)}
+                    </button>
+                  ))}
+              </div>
+            </div>
+            <div className="mt-5 border-t border-border pt-4">
+              <h3 className="mb-2 text-sm font-semibold">Задания на размещение</h3>
+              <div className="space-y-2">
+                {work.flatMap((item) =>
+                  item.lines
+                    .filter((line) => line.status !== "COMPLETED")
+                    .map((line) => (
+                      <WorkerTaskCard
+                        key={line.id}
+                        title={`${line.product.sku} · ${line.sourceLocation.code}`}
+                        details={`Осталось: ${line.quantity - line.completedQuantity}`}
+                        meta={`Куда: ${line.destinationLocation?.code ?? "выберите ячейку"}`}
+                        actionLabel="Выполнить"
+                        onClick={() => void confirmWorkLine(line)}
+                      />
+                    ))
+                )}
+              </div>
+            </div>
           </div>
         }
       >

@@ -504,6 +504,12 @@ Status:
 - Validation: put-away tests and build.
 - Continue when: receiving-to-putaway scenario works end to end.
 
+Status:
+- Partially implemented in this pass.
+- Added receiving-line links on work lines, generated `PUTAWAY` work from received quantities, suggested destination lookup, partial line completion, and Russian task cards on `Размещение`.
+- Validation passed with `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build`.
+- Remaining hardening: capacity checks, strict scan confirmation for generated work, route-level tests, destination override UI, and automatic generation after receiving close.
+
 ### Phase E1: Allocation/Reservation Engine
 
 - Goal: reserve order demand before picking.

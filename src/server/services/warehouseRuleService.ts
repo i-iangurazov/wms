@@ -314,3 +314,45 @@ export async function getPickLocationIdsByPriority(tx: Tx, context: RequestConte
   });
   return directives.map((directive) => directive.locationId).filter((id): id is string => Boolean(id));
 }
+
+export async function suggestPutawayDestinationId(tx: Tx, context: RequestContext, warehouseId: string) {
+  const preferredZones = await tx.warehouseLocationDirective.findMany({
+    where: {
+      storeId: context.storeId,
+      warehouseId,
+      type: "PREFERRED_PUTAWAY_ZONE",
+      active: true,
+      zone: { is: { status: "ACTIVE" } }
+    },
+    orderBy: [{ priority: "asc" }, { createdAt: "asc" }]
+  });
+  for (const directive of preferredZones) {
+    if (!directive.zoneId) {
+      continue;
+    }
+    const location = await tx.warehouseLocation.findFirst({
+      where: {
+        storeId: context.storeId,
+        warehouseId,
+        zoneId: directive.zoneId,
+        status: "ACTIVE",
+        type: { in: ["STORAGE", "PICKING"] }
+      },
+      orderBy: [{ isPickable: "desc" }, { code: "asc" }]
+    });
+    if (location) {
+      return location.id;
+    }
+  }
+
+  const fallback = await tx.warehouseLocation.findFirst({
+    where: {
+      storeId: context.storeId,
+      warehouseId,
+      status: "ACTIVE",
+      type: { in: ["STORAGE", "PICKING"] }
+    },
+    orderBy: [{ isPickable: "desc" }, { code: "asc" }]
+  });
+  return fallback?.id ?? null;
+}

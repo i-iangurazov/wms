@@ -1059,3 +1059,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: receiving remains one screen in Russian, with simple fields for normal quantity, damaged quantity, over-receipt permission, and short-close reason.
 - Architecture review: good and damaged receipts still use `StockMovementService`; damaged receipt creates a receive movement and a damaged stock-state adjustment inside the same transaction. Under-receipt closure does not mutate stock.
 - Remaining risk: no supplier model, no dedicated unknown-barcode exception record, no receiving label printout, no route-level tests for over/under/damaged receipt, and over-receipt policy is permission-based rather than configurable per supplier/warehouse.
+
+#### Phase 25: Put-Away Work Generation Foundation
+
+- Status: partially hardened; put-away is no longer only a manual stock movement.
+- What changed: linked `warehouse_work_lines` to `receiving_lines`, added put-away work listing/generation/confirmation APIs, suggested destination lookup from preferred put-away zones or active storage/picking fallback, Russian put-away task list, and partial completion with `completedQuantity`.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: workers can still use the simple manual flow, but now also see generated `Задания на размещение` and can create work from receiving sessions from the same Russian page.
+- Architecture review: generated work is tenant-scoped and permission-gated; execution still moves stock through `StockMovementService` inside a transaction and references the work line in the movement.
+- Remaining risk: no capacity model, no source/destination scan matching on generated work, no route-level put-away tests, no per-line destination override UI, and generated work can still be created from an in-progress receiving session.

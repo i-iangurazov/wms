@@ -125,6 +125,10 @@ const russianErrorMessages: Record<string, string> = {
   "All receiving lines must be received before completion.": "Сначала примите все товары в приёмке.",
   "Source receiving location not found.": "Исходная ячейка приёмки не найдена.",
   "Destination location not found.": "Ячейка назначения не найдена.",
+  "Put-away destination is not configured.": "Настройте ячейку или зону для размещения.",
+  "No received stock is waiting for put-away.": "Нет принятого товара, ожидающего размещения.",
+  "Put-away line not found.": "Шаг размещения не найден.",
+  "Put-away line is already completed.": "Этот шаг размещения уже завершён.",
   "Put-away destination must be an active STORAGE or PICKING location.":
     "Размещать товар можно только в активную ячейку хранения или сборки.",
   "Quantity must be a positive whole number.": "Количество должно быть положительным целым числом.",
