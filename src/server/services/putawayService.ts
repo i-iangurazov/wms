@@ -13,7 +13,7 @@ import {
 import { suggestPutawayDestinationId } from "@/server/services/warehouseRuleService";
 
 export async function listPutawayWork(context: RequestContext) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.warehouseWork.findMany({
     where: { storeId: context.storeId, type: "PUTAWAY" },
     include: {
@@ -35,7 +35,7 @@ export async function listPutawayWork(context: RequestContext) {
 }
 
 export async function generatePutawayWorkForSession(context: RequestContext, sessionId: string) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.$transaction(async (tx) => {
     const session = await tx.receivingSession.findFirst({
       where: { id: sessionId, storeId: context.storeId },
@@ -123,7 +123,7 @@ export async function putAwayStock(
     idempotencyKey?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.$transaction(async (tx) => {
     const [fromLocation, toLocation, balance] = await Promise.all([
       tx.warehouseLocation.findFirst({ where: { id: input.fromLocationId, storeId: context.storeId } }),
@@ -182,7 +182,7 @@ export async function confirmPutawayLine(
     idempotencyKey?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.warehouseWorkLine.findUnique({
       where: { id: input.lineId },

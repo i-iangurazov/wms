@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { wmsNavItems } from "@/lib/wmsText";
-import { protectedRouteMatrix, visibleWmsNavItems } from "@/server/routeAccess";
+import { canRoleAccessWmsPath, protectedRouteMatrix, visibleWmsNavItems } from "@/server/routeAccess";
 
 describe("WMS route access matrix", () => {
   it("defines permissions for every visible navigation route", () => {
@@ -20,14 +20,30 @@ describe("WMS route access matrix", () => {
   it("shows worker routes without exposing admin pages", () => {
     const workerRoutes = visibleWmsNavItems("WAREHOUSE_WORKER").map((item) => item.href);
     expect(workerRoutes).toContain("/wms/receiving");
+    expect(workerRoutes).toContain("/wms/put-away");
     expect(workerRoutes).toContain("/wms/picking");
+    expect(workerRoutes).toContain("/wms/packing");
     expect(workerRoutes).toContain("/wms/transfers");
+    expect(workerRoutes).not.toContain("/wms/adjustments");
     expect(workerRoutes).not.toContain("/wms/products");
     expect(workerRoutes).not.toContain("/wms/barcodes");
     expect(workerRoutes).not.toContain("/wms/audit");
+    expect(workerRoutes).not.toContain("/wms/settings");
   });
 
   it("hides all WMS navigation from roles without WMS access", () => {
     expect(visibleWmsNavItems("CASHIER")).toHaveLength(0);
+  });
+
+  it("blocks unauthorized protected routes by role", () => {
+    expect(canRoleAccessWmsPath("WAREHOUSE_WORKER", "/wms/receiving")).toBe(true);
+    expect(canRoleAccessWmsPath("WAREHOUSE_WORKER", "/wms/adjustments")).toBe(false);
+    expect(canRoleAccessWmsPath("WAREHOUSE_WORKER", "/wms/settings")).toBe(false);
+    expect(canRoleAccessWmsPath("WAREHOUSE_WORKER", "/wms/locations")).toBe(false);
+    expect(canRoleAccessWmsPath("WAREHOUSE_WORKER", "/wms/products")).toBe(false);
+    expect(canRoleAccessWmsPath("VIEWER", "/wms/inventory")).toBe(true);
+    expect(canRoleAccessWmsPath("VIEWER", "/wms/receiving")).toBe(false);
+    expect(canRoleAccessWmsPath("VIEWER", "/wms/transfers")).toBe(false);
+    expect(canRoleAccessWmsPath("ADMIN", "/wms/settings")).toBe(true);
   });
 });

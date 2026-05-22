@@ -90,7 +90,7 @@ export function defaultLocationFlags(type: LocationType): Required<LocationFlags
 }
 
 export async function listLocations(context: RequestContext, warehouseId?: string) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   await assertStoreAccess(prisma, context, context.storeId);
   return prisma.warehouseLocation.findMany({
     where: { storeId: context.storeId, warehouseId },
@@ -100,7 +100,7 @@ export async function listLocations(context: RequestContext, warehouseId?: strin
 }
 
 export async function getLocation(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const location = await prisma.warehouseLocation.findFirst({
     where: { id, storeId: context.storeId },
     include: { warehouse: true, zone: true }
@@ -110,7 +110,7 @@ export async function getLocation(context: RequestContext, id: string) {
 }
 
 export async function listZones(context: RequestContext, warehouseId?: string) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   await assertStoreAccess(prisma, context, context.storeId);
   return prisma.warehouseZone.findMany({
     where: { storeId: context.storeId, warehouseId },
@@ -145,7 +145,7 @@ export async function createZone(
   context: RequestContext,
   input: { warehouseId: string; code: string; name: string; status?: WarehouseStatus }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const warehouse = await tx.warehouse.findFirst({
@@ -180,7 +180,7 @@ export async function updateZone(
   id: string,
   input: { code?: string; name?: string; status?: WarehouseStatus }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const existing = await tx.warehouseZone.findFirst({ where: { id, storeId: context.storeId } });
@@ -225,7 +225,7 @@ export async function createLocation(
     status?: WarehouseStatus;
   } & LocationFlags
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const warehouse = await tx.warehouse.findFirst({
@@ -273,7 +273,7 @@ export async function updateLocation(
     status?: WarehouseStatus;
   } & LocationFlags
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await assertStoreAccess(tx, context, context.storeId);
     const existing = await tx.warehouseLocation.findFirst({ where: { id, storeId: context.storeId } });

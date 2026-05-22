@@ -3,7 +3,7 @@ import type { RequestContext } from "@/server/auth";
 import { requirePermission } from "@/server/permissions";
 
 export async function getWmsDashboard(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const [
     activeWarehouses,
     activeLocations,

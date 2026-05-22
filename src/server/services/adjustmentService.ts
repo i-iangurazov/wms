@@ -24,7 +24,7 @@ export async function adjustStock(
     idempotencyKey?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_ADJUST_STOCK");
+  requirePermission(context.role, "adjustments.create");
   assertManualCorrectionNote(input.reason, input.note);
   const targetState = input.targetState ?? "ON_HAND";
   const sides =

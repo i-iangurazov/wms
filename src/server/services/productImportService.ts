@@ -192,7 +192,7 @@ async function assertNoExistingSkuOrBarcode(
 }
 
 export async function importProductsFromCsv(context: RequestContext, csv: string) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   const parsed = parseProductImportCsv(csv);
   if (parsed.errors.length > 0) {
     return { imported: 0, productsCreated: 0, variantsCreated: 0, errors: parsed.errors };

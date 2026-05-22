@@ -134,7 +134,7 @@ async function assertProductCanBeDeactivated(
 }
 
 export async function listProducts(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   return prisma.product.findMany({
     where: { storeId: context.storeId, active: true },
     include: { variants: { where: { active: true }, orderBy: { sku: "asc" } } },
@@ -143,7 +143,7 @@ export async function listProducts(context: RequestContext) {
 }
 
 export async function createProduct(context: RequestContext, input: ProductInput) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   const sku = assertProductSku(input.sku);
   const name = assertProductName(input.name);
   const barcode = normalizeOptionalBarcode(input.barcode);
@@ -175,7 +175,7 @@ export async function createProduct(context: RequestContext, input: ProductInput
 }
 
 export async function updateProduct(context: RequestContext, id: string, input: ProductInput) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   const sku = assertProductSku(input.sku);
   const name = assertProductName(input.name);
   const barcode = normalizeOptionalBarcode(input.barcode);
@@ -207,7 +207,7 @@ export async function updateProduct(context: RequestContext, id: string, input: 
 }
 
 export async function deactivateProduct(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   return prisma.$transaction(async (tx) => {
     const existing = await tx.product.findFirst({ where: { id, storeId: context.storeId } });
     if (!existing) {
@@ -232,7 +232,7 @@ export async function deactivateProduct(context: RequestContext, id: string) {
 }
 
 export async function createProductVariant(context: RequestContext, input: VariantInput) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   const sku = assertProductSku(input.sku);
   const name = assertProductName(input.name);
   const barcode = normalizeOptionalBarcode(input.barcode);
@@ -269,7 +269,7 @@ export async function createProductVariant(context: RequestContext, input: Varia
 }
 
 export async function updateProductVariant(context: RequestContext, id: string, input: ProductInput) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   const sku = assertProductSku(input.sku);
   const name = assertProductName(input.name);
   const barcode = normalizeOptionalBarcode(input.barcode);
@@ -301,7 +301,7 @@ export async function updateProductVariant(context: RequestContext, id: string, 
 }
 
 export async function deactivateProductVariant(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_MANAGE_PRODUCTS");
+  requirePermission(context.role, "products.manage");
   return prisma.$transaction(async (tx) => {
     const existing = await tx.productVariant.findFirst({ where: { id, storeId: context.storeId } });
     if (!existing) {

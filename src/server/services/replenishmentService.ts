@@ -30,7 +30,7 @@ function assertReplenishmentQuantity(input: { requested: number; remaining: numb
 }
 
 export async function listReplenishment(context: RequestContext) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   const [rules, work, warehouses, locations, zones, products] = await Promise.all([
     prisma.replenishmentRule.findMany({
       where: { storeId: context.storeId },
@@ -84,7 +84,7 @@ export async function createReplenishmentRule(
     maxQty: number;
   }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   assertMinMax(input);
   if (!input.sourceLocationId && !input.sourceZoneId) {
     throw new AppError("Replenishment source is required.", 400);
@@ -177,7 +177,7 @@ export async function createReplenishmentRule(
 }
 
 export async function deactivateReplenishmentRule(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     const existing = await tx.replenishmentRule.findFirst({ where: { id, storeId: context.storeId } });
     if (!existing) {
@@ -196,7 +196,7 @@ export async function deactivateReplenishmentRule(context: RequestContext, id: s
 }
 
 export async function generateReplenishmentWork(context: RequestContext, ruleId: string) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.$transaction(async (tx) => {
     const rule = await tx.replenishmentRule.findFirst({
       where: { id: ruleId, storeId: context.storeId, active: true },
@@ -294,7 +294,7 @@ export async function confirmReplenishmentLine(
   context: RequestContext,
   input: { lineId: string; sourceScan: string; destinationScan: string; productScan: string; quantity: number }
 ) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "putaway.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.warehouseWorkLine.findUnique({
       where: { id: input.lineId },

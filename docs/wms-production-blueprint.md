@@ -683,6 +683,16 @@ After every phase:
 - Validation passed: prisma generate, migration/status check, prisma seed, typecheck, lint, tests, DB smoke, build.
 - Remaining packing/shipping hardening: package/carton records, labels, carrier integration, idempotency, route/browser tests.
 
+### Phase O Completed: Canonical Permission-Based RBAC
+
+- Added a canonical standalone WMS permission model: organization management, user management, WMS view, warehouse/location management, product/barcode management, receiving, put-away, transfers, adjustments, cycle count execution/approval, picking creation/execution, packing, reports, and audit.
+- Preserved legacy `WMS_*` permission names as aliases only, so existing checks remain restrictive during migration.
+- Updated WMS services to enforce operation-specific permissions server-side.
+- Added role-aware navigation and a Russian access-denied route/boundary for direct unauthorized page access.
+- Added permission matrix and organization isolation guard tests.
+- Validation passed: typecheck, lint, tests, DB smoke, build.
+- Remaining RBAC hardening: API route-handler authorization coverage and browser/mobile E2E tests for role-specific flows.
+
 ## Production Operations Notes
 
 Minimum local run:

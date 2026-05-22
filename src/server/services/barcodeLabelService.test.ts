@@ -23,8 +23,8 @@ describe("barcode label service helpers", () => {
   });
 
   it("uses warehouse permission for location labels and barcode permission for other labels", () => {
-    expect(barcodePermissionForType("LOCATION")).toBe("WMS_MANAGE_WAREHOUSES");
-    expect(barcodePermissionForType("PRODUCT")).toBe("WMS_MANAGE_BARCODES");
+    expect(barcodePermissionForType("LOCATION")).toBe("wms.manageLocations");
+    expect(barcodePermissionForType("PRODUCT")).toBe("barcodes.manage");
   });
 
   it("exports CSV with escaped label values", () => {

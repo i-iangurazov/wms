@@ -80,7 +80,7 @@ async function assertNotLastAdmin(tx: Prisma.TransactionClient, storeId: string,
 }
 
 export async function listStoreUsers(context: RequestContext) {
-  requirePermission(context.role, "WMS_MANAGE_USERS");
+  requirePermission(context.role, "users.manage");
   return prisma.storeUser.findMany({
     where: { storeId: context.storeId },
     include: { user: true },
@@ -92,7 +92,7 @@ export async function addStoreUser(
   context: RequestContext,
   input: { email: string; name: string; role: string; initialPassword?: string }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_USERS");
+  requirePermission(context.role, "users.manage");
   const email = assertEmail(input.email);
   const name = assertName(input.name);
   const role = assertRole(input.role);
@@ -138,7 +138,7 @@ export async function updateStoreUserRole(
   membershipId: string,
   input: { role: string }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_USERS");
+  requirePermission(context.role, "users.manage");
   const role = assertRole(input.role);
 
   return prisma.$transaction(async (tx) => {
@@ -174,7 +174,7 @@ export async function updateStoreUserRole(
 }
 
 export async function removeStoreUser(context: RequestContext, membershipId: string) {
-  requirePermission(context.role, "WMS_MANAGE_USERS");
+  requirePermission(context.role, "users.manage");
   return prisma.$transaction(async (tx) => {
     const membership = await assertNotLastAdmin(tx, context.storeId, membershipId);
     await tx.storeUser.delete({ where: { id: membership.id } });

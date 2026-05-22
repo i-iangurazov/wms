@@ -452,6 +452,40 @@ Status:
 - Validation passed with `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build`.
 - Remaining hardening: password reset/invite email, 2FA, long-term lockout administration, and broader route handler permission tests.
 
+### Phase A2: Canonical Permission-Based RBAC
+
+- Goal: enforce MVP-safe permissions independently of UI hiding.
+- Business reason: a standalone WMS cannot allow warehouse workers or viewers to reach stock correction, settings, user management, or cross-organization data by direct URL/API calls.
+- Technical tasks:
+  - Replace draft `WMS_*` permissions with canonical permission names required for production RBAC.
+  - Keep legacy aliases during migration so old checks do not silently become permissive.
+  - Update service-layer permission checks to canonical permissions.
+  - Add route-access matrix checks and Russian access-denied UI.
+  - Add permission matrix tests and organization isolation guard tests.
+- Files/modules:
+  - `src/lib/permissionModel.ts`
+  - `src/server/permissions.ts`
+  - `src/server/routeAccess.ts`
+  - `src/lib/wmsText.ts`
+  - `src/components/AppShell.tsx`
+  - `src/components/AccessDenied.tsx`
+  - `src/components/RouteAccessBoundary.tsx`
+  - WMS services under `src/server/services/**`
+  - `src/server/permissions.test.ts`
+  - `src/server/routeAccess.test.ts`
+  - `src/server/storeAccess.test.ts`
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`.
+- Self-review: workers can execute assigned operations but cannot mutate settings or perform corrections; viewers cannot mutate; service layer rejects unauthorized operations; Russian forbidden UI exists.
+- Continue when: validation passes and docs record remaining route/e2e authorization gaps.
+
+Status:
+- Implemented in this pass.
+- Canonical permissions are now the source of truth, with legacy aliases only for safe migration compatibility.
+- Service checks now use operation-specific permissions such as `receiving.execute`, `putaway.execute`, `adjustments.create`, `cycleCounts.approve`, `picking.create`, and `packing.execute`.
+- Added Russian forbidden state and client-side route boundary for direct unauthorized WMS page access.
+- Validation passed with `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build`.
+- Remaining hardening: route handler tests for every API endpoint and browser E2E checks for role-specific navigation/action blocking.
+
 ### Phase B1: Barcode Registry Foundation
 
 - Goal: support multiple product/location labels and conflict detection.

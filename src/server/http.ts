@@ -11,6 +11,7 @@ const russianErrorMessages: Record<string, string> = {
   "Password must be at least 10 characters.": "Пароль должен быть не короче 10 символов.",
   "Initial password is required for a new user.": "Для нового пользователя укажите временный пароль.",
   "You do not have permission to perform this action.": "Недостаточно прав для этого действия.",
+  "У вас нет доступа к этому действию": "У вас нет доступа к этому действию",
   "Cross-store access is not allowed.": "Нет доступа к данным другой организации.",
   "User does not have access to this store.": "У пользователя нет доступа к этой организации.",
   "Invalid user role.": "Некорректная роль пользователя.",

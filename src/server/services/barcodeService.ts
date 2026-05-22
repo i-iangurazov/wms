@@ -50,7 +50,7 @@ export async function resolveBarcode(
   context: RequestContext,
   input: { scan: string; expectedType?: BarcodeEntityType }
 ) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const scan = normalizeBarcodeScan(input.scan);
   if (!scan) {
     throw new AppError("Barcode scan is required.", 400);

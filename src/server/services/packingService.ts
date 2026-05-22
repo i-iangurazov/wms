@@ -18,7 +18,7 @@ function assertPackQuantity(input: { requested: number; remaining: number }) {
 }
 
 export async function listPacking(context: RequestContext) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "packing.execute");
   const [orders, work, warehouses] = await Promise.all([
     prisma.customerOrder.findMany({
       where: { storeId: context.storeId, status: { in: ["PICKED", "PACKING", "PACKED", "READY_TO_SHIP"] } },
@@ -48,7 +48,7 @@ export async function createPackWorkFromOrder(
   context: RequestContext,
   input: { orderId: string; warehouseId: string }
 ) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "packing.execute");
   return prisma.$transaction(async (tx) => {
     const order = await tx.customerOrder.findFirst({
       where: { id: input.orderId, storeId: context.storeId },
@@ -125,7 +125,7 @@ export async function confirmPackLine(
   context: RequestContext,
   input: { lineId: string; productScan: string; quantity: number }
 ) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "packing.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.warehouseWorkLine.findUnique({
       where: { id: input.lineId },
@@ -180,7 +180,7 @@ export async function confirmPackLine(
 }
 
 export async function markOrderReadyToShip(context: RequestContext, orderId: string) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "packing.execute");
   return prisma.$transaction(async (tx) => {
     const order = await tx.customerOrder.findFirst({ where: { id: orderId, storeId: context.storeId } });
     if (!order) {

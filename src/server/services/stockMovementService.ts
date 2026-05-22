@@ -43,26 +43,26 @@ export type MovementInput = {
 
 function requireMovementPermission(context: RequestContext, input: MovementInput) {
   if (input.type === "RECEIVE") {
-    requirePermission(context.role, "WMS_RECEIVE_STOCK");
+    requirePermission(context.role, "receiving.execute");
     return;
   }
   if (input.type === "ADJUSTMENT") {
     if (input.reason === "DAMAGED" && input.referenceType === "ReceivingLine") {
-      requirePermission(context.role, "WMS_RECEIVE_STOCK");
+      requirePermission(context.role, "receiving.execute");
       return;
     }
-    requirePermission(context.role, "WMS_ADJUST_STOCK");
+    requirePermission(context.role, "adjustments.create");
     return;
   }
   if (input.type === "CYCLE_COUNT_CORRECTION") {
-    requirePermission(context.role, "WMS_APPROVE_CYCLE_COUNT");
+    requirePermission(context.role, "cycleCounts.approve");
     return;
   }
   if (input.type === "PICK") {
-    requirePermission(context.role, "WMS_PICK");
+    requirePermission(context.role, "picking.execute");
     return;
   }
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, input.type === "PUTAWAY" ? "putaway.execute" : "transfers.execute");
 }
 
 async function loadLocation(
@@ -386,7 +386,7 @@ export async function listInventoryBalances(
   context: RequestContext,
   filters: { warehouseId?: string; locationId?: string; productId?: string }
 ) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const balances = await prisma.inventoryLocationBalance.findMany({
     where: {
       storeId: context.storeId,
@@ -414,7 +414,7 @@ export async function listInventoryMovements(
   context: RequestContext,
   filters: { warehouseId?: string; locationId?: string; productId?: string }
 ) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   return prisma.inventoryMovement.findMany({
     where: {
       storeId: context.storeId,

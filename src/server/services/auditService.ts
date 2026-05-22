@@ -32,7 +32,7 @@ export async function listAuditLogs(
   context: RequestContext,
   filters: { action?: string; entityType?: string; userId?: string } = {}
 ) {
-  requirePermission(context.role, "WMS_VIEW_AUDIT");
+  requirePermission(context.role, "audit.view");
   return prisma.auditLog.findMany({
     where: {
       storeId: context.storeId,

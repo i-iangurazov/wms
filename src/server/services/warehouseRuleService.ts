@@ -137,7 +137,7 @@ async function validateDirectiveTarget(
 }
 
 export async function listWarehouseRules(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const [warehouses, zones, locations, workTemplates, locationDirectives] = await Promise.all([
     prisma.warehouse.findMany({
       where: { storeId: context.storeId },
@@ -171,7 +171,7 @@ export async function createWorkTemplate(
   context: RequestContext,
   input: { warehouseId: string; type: string; name: string; priority?: number }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   const type = assertWorkTemplateType(input.type);
   const name = assertName(input.name);
   const priority = assertPriority(input.priority);
@@ -210,7 +210,7 @@ export async function createLocationDirective(
     locationId?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   const type = assertDirectiveType(input.type);
   const name = assertName(input.name);
   const priority = assertPriority(input.priority);
@@ -247,7 +247,7 @@ export async function createLocationDirective(
 }
 
 export async function deactivateWorkTemplate(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     const existing = await tx.warehouseWorkTemplate.findFirst({ where: { id, storeId: context.storeId } });
     if (!existing) {
@@ -267,7 +267,7 @@ export async function deactivateWorkTemplate(context: RequestContext, id: string
 }
 
 export async function deactivateLocationDirective(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageLocations");
   return prisma.$transaction(async (tx) => {
     const existing = await tx.warehouseLocationDirective.findFirst({ where: { id, storeId: context.storeId } });
     if (!existing) {

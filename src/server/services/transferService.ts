@@ -15,7 +15,7 @@ export async function transferStock(
     idempotencyKey?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_MOVE_STOCK");
+  requirePermission(context.role, "transfers.execute");
   return prisma.$transaction((tx) =>
     applyStockMovementInTransaction(tx, context, {
       productId: input.productId,

@@ -59,7 +59,7 @@ async function assertWarehouseCanBeDeactivated(
 }
 
 export async function listWarehouses(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   await assertStoreAccess(prisma, context, context.storeId);
   return prisma.warehouse.findMany({
     where: { storeId: context.storeId },
@@ -69,7 +69,7 @@ export async function listWarehouses(context: RequestContext) {
 }
 
 export async function getWarehouse(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   const warehouse = await prisma.warehouse.findFirst({
     where: { id, storeId: context.storeId },
     include: { locations: { orderBy: { code: "asc" } } }
@@ -82,7 +82,7 @@ export async function createWarehouse(
   context: RequestContext,
   input: { code: string; name: string; status?: WarehouseStatus }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageWarehouses");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const warehouse = await tx.warehouse.create({
@@ -110,7 +110,7 @@ export async function updateWarehouse(
   id: string,
   input: { code?: string; name?: string; status?: WarehouseStatus }
 ) {
-  requirePermission(context.role, "WMS_MANAGE_WAREHOUSES");
+  requirePermission(context.role, "wms.manageWarehouses");
   return prisma.$transaction(async (tx: DbClient) => {
     await assertStoreAccess(tx, context, context.storeId);
     const existing = await tx.warehouse.findFirst({ where: { id, storeId: context.storeId } });

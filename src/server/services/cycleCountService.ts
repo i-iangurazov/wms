@@ -13,7 +13,7 @@ import {
 } from "@/server/services/cycleCountRules";
 
 export async function listCycleCounts(context: RequestContext) {
-  requirePermission(context.role, "WMS_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.execute");
   return prisma.cycleCountSession.findMany({
     where: { storeId: context.storeId },
     include: {
@@ -30,7 +30,7 @@ export async function createCycleCount(
   context: RequestContext,
   input: { warehouseId: string; locationId: string }
 ) {
-  requirePermission(context.role, "WMS_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.execute");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const location = await tx.warehouseLocation.findFirst({
@@ -85,7 +85,7 @@ export async function updateCycleCountLine(
   context: RequestContext,
   input: { lineId: string; countedQty: number }
 ) {
-  requirePermission(context.role, "WMS_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.cycleCountLine.findUnique({
       where: { id: input.lineId },
@@ -115,7 +115,7 @@ export async function updateCycleCountLine(
 }
 
 export async function submitCycleCount(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.execute");
   return prisma.$transaction(async (tx) => {
     const session = await tx.cycleCountSession.findFirst({
       where: { id, storeId: context.storeId },
@@ -144,7 +144,7 @@ export async function submitCycleCount(context: RequestContext, id: string) {
 }
 
 export async function approveCycleCount(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_APPROVE_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.approve");
   return prisma.$transaction(async (tx) => {
     const session = await tx.cycleCountSession.findFirst({
       where: { id, storeId: context.storeId },
@@ -193,7 +193,7 @@ export async function approveCycleCount(context: RequestContext, id: string) {
 }
 
 export async function rejectCycleCount(context: RequestContext, id: string) {
-  requirePermission(context.role, "WMS_APPROVE_CYCLE_COUNT");
+  requirePermission(context.role, "cycleCounts.approve");
   return prisma.$transaction(async (tx) => {
     const session = await tx.cycleCountSession.findFirst({
       where: { id, storeId: context.storeId },

@@ -1,23 +1,24 @@
-import type { WmsPermission } from "@/server/permissions";
+import type { PermissionKey } from "@/lib/permissionModel";
 
 export const wmsNavItems = [
-  { href: "/wms", label: "Обзор", permission: "WMS_VIEW" },
-  { href: "/wms/locations", label: "Склады и ячейки", permission: "WMS_MANAGE_WAREHOUSES" },
-  { href: "/wms/products", label: "Товары", permission: "WMS_MANAGE_PRODUCTS" },
-  { href: "/wms/barcodes", label: "Штрихкоды", permission: "WMS_MANAGE_BARCODES" },
-  { href: "/wms/inventory", label: "Остатки", permission: "WMS_VIEW" },
-  { href: "/wms/receiving", label: "Приёмка", permission: "WMS_RECEIVE_STOCK" },
-  { href: "/wms/put-away", label: "Размещение", permission: "WMS_MOVE_STOCK" },
-  { href: "/wms/replenishment", label: "Пополнение", permission: "WMS_MOVE_STOCK" },
-  { href: "/wms/transfers", label: "Перемещения", permission: "WMS_MOVE_STOCK" },
-  { href: "/wms/picking", label: "Сборка заказов", permission: "WMS_PICK" },
-  { href: "/wms/packing", label: "Упаковка", permission: "WMS_PICK" },
-  { href: "/wms/cycle-counts", label: "Инвентаризация", permission: "WMS_CYCLE_COUNT" },
-  { href: "/wms/movements", label: "История движений", permission: "WMS_VIEW" },
-  { href: "/wms/reconciliation", label: "Проверка остатков", permission: "WMS_VIEW_AUDIT" },
-  { href: "/wms/audit", label: "Журнал действий", permission: "WMS_VIEW_AUDIT" },
-  { href: "/wms/settings", label: "Настройки", permission: "WMS_MANAGE_WAREHOUSES" }
-] as const satisfies ReadonlyArray<{ href: string; label: string; permission: WmsPermission }>;
+  { href: "/wms", label: "Обзор", permission: "wms.view" },
+  { href: "/wms/locations", label: "Склады и ячейки", permission: "wms.manageLocations" },
+  { href: "/wms/products", label: "Товары", permission: "products.manage" },
+  { href: "/wms/barcodes", label: "Штрихкоды", permission: "barcodes.manage" },
+  { href: "/wms/inventory", label: "Остатки", permission: "wms.view" },
+  { href: "/wms/receiving", label: "Приёмка", permission: "receiving.execute" },
+  { href: "/wms/put-away", label: "Размещение", permission: "putaway.execute" },
+  { href: "/wms/replenishment", label: "Пополнение", permission: "putaway.execute" },
+  { href: "/wms/transfers", label: "Перемещения", permission: "transfers.execute" },
+  { href: "/wms/adjustments", label: "Корректировки", permission: "adjustments.create" },
+  { href: "/wms/picking", label: "Сборка заказов", permission: "picking.execute" },
+  { href: "/wms/packing", label: "Упаковка", permission: "packing.execute" },
+  { href: "/wms/cycle-counts", label: "Инвентаризация", permission: "cycleCounts.execute" },
+  { href: "/wms/movements", label: "История движений", permission: "wms.view" },
+  { href: "/wms/reconciliation", label: "Проверка остатков", permission: "reports.view" },
+  { href: "/wms/audit", label: "Журнал действий", permission: "audit.view" },
+  { href: "/wms/settings", label: "Настройки", permission: "users.manage" }
+] as const satisfies ReadonlyArray<{ href: string; label: string; permission: PermissionKey }>;
 
 export const statusLabels: Record<string, string> = {
   ACTIVE: "Активно",

@@ -4,6 +4,7 @@ import { commonText, wmsNavItems } from "@/lib/wmsText";
 import { sessionCookieName } from "@/lib/authCookies";
 import { getSessionContext } from "@/server/session";
 import { visibleWmsNavItems } from "@/server/routeAccess";
+import { RouteAccessBoundary } from "@/components/RouteAccessBoundary";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await getSessionContext(cookies().get(sessionCookieName)?.value);
@@ -57,7 +58,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
+          <RouteAccessBoundary role={session?.role ?? null}>{children}</RouteAccessBoundary>
+        </main>
       </div>
     </div>
   );

@@ -1068,3 +1068,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: workers can still use the simple manual flow, but now also see generated `Задания на размещение` and can create work from receiving sessions from the same Russian page.
 - Architecture review: generated work is tenant-scoped and permission-gated; execution still moves stock through `StockMovementService` inside a transaction and references the work line in the movement.
 - Remaining risk: no capacity model, no source/destination scan matching on generated work, no route-level put-away tests, no per-line destination override UI, and generated work can still be created from an in-progress receiving session.
+
+#### Phase 26: Canonical Role-Based Access Control
+
+- Status: hardened as a required MVP safety gate.
+- What changed: added the canonical permission model (`org.manage`, `users.manage`, `wms.view`, `receiving.execute`, `putaway.execute`, `transfers.execute`, `adjustments.create`, `cycleCounts.*`, `picking.*`, `packing.execute`, `reports.view`, `audit.view`), mapped legacy `WMS_*` permissions as migration aliases, updated service-layer checks to canonical permissions, added role-aware route checks, added Russian `Недостаточно прав` UI, and added permission/cross-organization isolation tests.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: unavailable WMS navigation is hidden by role; direct unauthorized WMS page access shows Russian access-denied copy: `Недостаточно прав`, `У вас нет доступа к этому действию`, `Обратитесь к администратору`.
+- Architecture review: backend/service checks remain authoritative; UI hiding is only a convenience layer. `WAREHOUSE_WORKER` can execute receiving, put-away, transfers, cycle counts, picking, and packing, but cannot adjust stock, approve count corrections, manage users, create warehouses, edit locations, or change settings. `VIEWER` remains read-only.
+- Remaining risk: this is not yet full browser E2E authorization coverage, and API route-level tests still need to cover every route handler in addition to service-layer permission tests.

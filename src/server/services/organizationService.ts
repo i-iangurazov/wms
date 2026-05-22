@@ -35,7 +35,7 @@ export async function listCurrentUserOrganizations(context: RequestContext) {
 }
 
 export async function createOrganization(context: RequestContext, input: { code: string; name: string }) {
-  requirePermission(context.role, "WMS_MANAGE_USERS");
+  requirePermission(context.role, "org.manage");
   const code = assertCode(input.code);
   const name = assertName(input.name);
 

@@ -7,7 +7,7 @@ import { assertOrderNumber, assertOrderQuantity } from "@/server/services/orderR
 import { variantKey } from "@/server/services/stockMovementEngine";
 
 export async function listCustomerOrders(context: RequestContext) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "picking.execute");
   return prisma.customerOrder.findMany({
     where: { storeId: context.storeId, status: { in: ["OPEN", "ALLOCATED", "PICKING"] } },
     include: { lines: { include: { product: true, variant: true } }, work: true },
@@ -25,7 +25,7 @@ export async function createCustomerOrder(
     quantity: number;
   }
 ) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "picking.create");
   const number = assertOrderNumber(input.number);
   const quantity = assertOrderQuantity(input.quantity);
 

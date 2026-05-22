@@ -17,7 +17,7 @@ import {
 import { getDefaultReceivingLocationId } from "@/server/services/warehouseRuleService";
 
 export async function listReceivingSessions(context: RequestContext) {
-  requirePermission(context.role, "WMS_RECEIVE_STOCK");
+  requirePermission(context.role, "receiving.execute");
   return prisma.receivingSession.findMany({
     where: { storeId: context.storeId },
     include: {
@@ -34,7 +34,7 @@ export async function createReceivingSession(
   context: RequestContext,
   input: { warehouseId: string; receivingLocationId?: string | null; reference?: string; note?: string }
 ) {
-  requirePermission(context.role, "WMS_RECEIVE_STOCK");
+  requirePermission(context.role, "receiving.execute");
   return prisma.$transaction(async (tx) => {
     await assertStoreAccess(tx, context, context.storeId);
     const warehouse = await tx.warehouse.findFirst({
@@ -87,7 +87,7 @@ export async function addReceivingLine(
   context: RequestContext,
   input: { sessionId: string; productId: string; variantId?: string | null; expectedQty: number }
 ) {
-  requirePermission(context.role, "WMS_RECEIVE_STOCK");
+  requirePermission(context.role, "receiving.execute");
   return prisma.$transaction(async (tx) => {
     const session = await tx.receivingSession.findFirst({
       where: { id: input.sessionId, storeId: context.storeId }
@@ -143,7 +143,7 @@ export async function receiveLine(
     idempotencyKey?: string | null;
   }
 ) {
-  requirePermission(context.role, "WMS_RECEIVE_STOCK");
+  requirePermission(context.role, "receiving.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.receivingLine.findUnique({
       where: { id: input.lineId },
@@ -176,7 +176,7 @@ export async function receiveLine(
       throw new AppError("Received quantity exceeds expected quantity.", 409);
     }
     if (line.expectedQty > 0 && nextTotal > line.expectedQty && input.allowOverReceipt) {
-      requirePermission(context.role, "WMS_ADJUST_STOCK");
+      requirePermission(context.role, "adjustments.create");
     }
 
     let movementId: string | undefined;
@@ -252,7 +252,7 @@ export async function completeReceivingSession(
   id: string,
   input: { allowShortClose?: boolean; note?: string | null } = {}
 ) {
-  requirePermission(context.role, "WMS_RECEIVE_STOCK");
+  requirePermission(context.role, "receiving.execute");
   return prisma.$transaction(async (tx) => {
     const session = await tx.receivingSession.findFirst({
       where: { id, storeId: context.storeId },

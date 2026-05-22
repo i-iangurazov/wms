@@ -222,7 +222,7 @@ async function main() {
           storeId: context.storeId,
           role: "WAREHOUSE_MANAGER"
         }),
-      /permission/
+      /доступ/
     );
     await removeStoreUser(context, managerMembership.id);
     const createdOrganization = await createOrganization(context, {

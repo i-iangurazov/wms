@@ -16,7 +16,7 @@ import {
 import { getPickLocationIdsByPriority } from "@/server/services/warehouseRuleService";
 
 export async function listPickWork(context: RequestContext) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "picking.execute");
   return prisma.warehouseWork.findMany({
     where: { storeId: context.storeId, type: "PICK" },
     include: {
@@ -36,7 +36,7 @@ export async function createPickWorkFromOrder(
   context: RequestContext,
   input: { orderId: string; warehouseId: string }
 ) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "picking.create");
   return prisma.$transaction(async (tx) => {
     const order = await tx.customerOrder.findFirst({
       where: { id: input.orderId, storeId: context.storeId },
@@ -120,7 +120,7 @@ export async function confirmPickLine(
   context: RequestContext,
   input: { lineId: string; locationScan: string; productScan: string; quantity: number; idempotencyKey?: string | null }
 ) {
-  requirePermission(context.role, "WMS_PICK");
+  requirePermission(context.role, "picking.execute");
   return prisma.$transaction(async (tx) => {
     const line = await tx.warehouseWorkLine.findUnique({
       where: { id: input.lineId },

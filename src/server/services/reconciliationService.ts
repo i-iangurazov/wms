@@ -41,7 +41,7 @@ function sameState(left: StockState, right: StockState) {
 }
 
 export async function getInventoryReconciliation(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW_AUDIT");
+  requirePermission(context.role, "reports.view");
   const [balances, movements] = await Promise.all([
     prisma.inventoryLocationBalance.findMany({
       where: { storeId: context.storeId },

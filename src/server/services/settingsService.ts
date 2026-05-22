@@ -5,7 +5,7 @@ import { requirePermission, rolePermissions } from "@/server/permissions";
 import { AppError } from "@/server/errors";
 
 export async function getSettingsOverview(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
 
   const [store, userCount, productCount, warehouseCount, locationCount, openWorkCount] = await Promise.all([
     prisma.store.findUnique({ where: { id: context.storeId } }),

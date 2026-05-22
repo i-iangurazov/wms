@@ -29,9 +29,9 @@ export function normalizeBarcodeLabelCode(code: string) {
 
 export function barcodePermissionForType(type: BarcodeLabelEntityType) {
   if (type === "LOCATION") {
-    return "WMS_MANAGE_WAREHOUSES" as const;
+    return "wms.manageLocations" as const;
   }
-  return "WMS_MANAGE_BARCODES" as const;
+  return "barcodes.manage" as const;
 }
 
 function targetData(type: BarcodeLabelEntityType, targetId: string) {
@@ -143,7 +143,7 @@ export async function assertBarcodeLabelCodeAvailable(
 }
 
 export async function listBarcodeLabels(context: RequestContext) {
-  requirePermission(context.role, "WMS_VIEW");
+  requirePermission(context.role, "wms.view");
   return prisma.barcodeLabel.findMany({
     where: { storeId: context.storeId, active: true },
     include: {

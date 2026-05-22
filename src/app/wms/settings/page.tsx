@@ -107,17 +107,24 @@ type WarehouseRules = {
 };
 
 const permissionLabels: Record<string, [string, string]> = {
-  WMS_VIEW: ["Просмотр склада", "обзор, остатки и история движений"],
-  WMS_VIEW_AUDIT: ["Журнал действий", "просмотр действий пользователей"],
-  WMS_MANAGE_USERS: ["Управление пользователями", "добавление пользователей и изменение ролей"],
-  WMS_MANAGE_PRODUCTS: ["Управление товарами", "создание товаров, вариантов и штрихкодов"],
-  WMS_MANAGE_WAREHOUSES: ["Управление складами", "склады, зоны и ячейки"],
-  WMS_MOVE_STOCK: ["Движение товара", "размещение и внутренние перемещения"],
-  WMS_RECEIVE_STOCK: ["Приёмка", "создание приёмок и принятие товара"],
-  WMS_ADJUST_STOCK: ["Корректировки", "изменение остатков с причиной"],
-  WMS_CYCLE_COUNT: ["Инвентаризация", "создание и заполнение пересчётов"],
-  WMS_APPROVE_CYCLE_COUNT: ["Утверждение инвентаризации", "применение расхождений к остаткам"],
-  WMS_PICK: ["Сборка заказов", "создание и выполнение заданий сборки"]
+  "org.manage": ["Управление организацией", "владение и критичные действия организации"],
+  "users.manage": ["Управление пользователями", "добавление пользователей и изменение ролей"],
+  "wms.view": ["Просмотр WMS", "обзор, остатки и история движений"],
+  "wms.manageWarehouses": ["Управление складами", "создание и изменение складов"],
+  "wms.manageLocations": ["Управление ячейками", "зоны, ячейки и складские правила"],
+  "products.manage": ["Управление товарами", "создание товаров, вариантов и импорт"],
+  "barcodes.manage": ["Управление штрихкодами", "товарные и складские штрихкоды"],
+  "receiving.execute": ["Приёмка", "создание приёмок и принятие товара"],
+  "putaway.execute": ["Размещение", "размещение товара и пополнение"],
+  "transfers.execute": ["Перемещения", "внутренние перемещения между ячейками"],
+  "adjustments.create": ["Корректировки", "изменение остатков с причиной"],
+  "cycleCounts.execute": ["Инвентаризация", "создание и заполнение пересчётов"],
+  "cycleCounts.approve": ["Утверждение инвентаризации", "применение расхождений к остаткам"],
+  "picking.create": ["Создание сборки", "создание заданий сборки из заказов"],
+  "picking.execute": ["Сборка заказов", "выполнение заданий сборки"],
+  "packing.execute": ["Упаковка", "проверка и упаковка собранных заказов"],
+  "reports.view": ["Отчёты", "проверка остатков и операционные показатели"],
+  "audit.view": ["Журнал действий", "просмотр действий пользователей"]
 };
 
 const roleLabels: Record<string, string> = {
@@ -208,10 +215,10 @@ export default function SettingsPage() {
       const nextOverview = payload.overview ?? null;
       setOverview(nextOverview);
       await loadOrganizations();
-      if (nextOverview?.permissions.includes("WMS_MANAGE_WAREHOUSES")) {
+      if (nextOverview?.permissions.includes("wms.manageLocations")) {
         await loadRules();
       }
-      if (nextOverview?.permissions.includes("WMS_MANAGE_USERS")) {
+      if (nextOverview?.permissions.includes("users.manage")) {
         await loadUsers();
       }
     }
@@ -488,7 +495,7 @@ export default function SettingsPage() {
             </section>
           </div>
 
-          {overview.permissions.includes("WMS_MANAGE_WAREHOUSES") ? (
+          {overview.permissions.includes("wms.manageLocations") ? (
             <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
               <h2 className="text-base font-semibold">Складские правила</h2>
               <p className="mt-1 text-sm text-muted">
@@ -721,7 +728,7 @@ export default function SettingsPage() {
             {organizationMessage ? (
               <div className="mt-4 rounded-md bg-surface p-3 text-sm text-muted">{organizationMessage}</div>
             ) : null}
-            {overview.permissions.includes("WMS_MANAGE_USERS") ? (
+            {overview.permissions.includes("org.manage") ? (
               <form onSubmit={addOrganization} className="mt-4 grid gap-3 md:grid-cols-[1fr_180px_auto]">
                 <input
                   className={inputClass}
@@ -766,7 +773,7 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {overview.permissions.includes("WMS_MANAGE_USERS") ? (
+          {overview.permissions.includes("users.manage") ? (
             <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
               <h2 className="text-base font-semibold">Пользователи</h2>
               <p className="mt-1 text-sm text-muted">
