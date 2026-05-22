@@ -44,6 +44,8 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importErrors, setImportErrors] = useState<Array<{ row: number; message: string }>>([]);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -135,6 +137,42 @@ export default function ProductsPage() {
     await loadProducts();
   }
 
+  async function importProducts(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setMessage(null);
+    setImportErrors([]);
+    if (!importFile) {
+      setError("Выберите CSV-файл.");
+      return;
+    }
+    const csv = await importFile.text();
+    const response = await fetch("/api/products/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ csv })
+    });
+    const payload = (await response.json()) as {
+      imported?: number;
+      productsCreated?: number;
+      variantsCreated?: number;
+      errors?: Array<{ row: number; message: string }>;
+      error?: string;
+    };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось импортировать товары.");
+      return;
+    }
+    if (payload.errors && payload.errors.length > 0) {
+      setImportErrors(payload.errors);
+      setError("Исправьте ошибки в файле и загрузите его снова.");
+      return;
+    }
+    setImportFile(null);
+    setMessage(`Импортировано: товаров ${payload.productsCreated ?? 0}, вариантов ${payload.variantsCreated ?? 0}.`);
+    await loadProducts();
+  }
+
   return (
     <div>
       <PageHeader
@@ -143,6 +181,42 @@ export default function ProductsPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
+
+      <form onSubmit={importProducts} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <div className="mb-3">
+          <h2 className="text-base font-semibold">Импорт из CSV</h2>
+          <p className="text-sm text-muted">
+            Колонки: sku, name, barcode, barcodes, variant_sku, variant_name, variant_barcode, variant_barcodes.
+            Дополнительные штрихкоды разделяйте точкой с запятой.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <Field label="CSV-файл">
+            <input
+              className={inputClass}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => setImportFile(event.target.files?.[0] ?? null)}
+            />
+          </Field>
+          <button className={buttonClass} type="submit" disabled={!importFile}>
+            Импортировать
+          </button>
+        </div>
+        {importErrors.length > 0 ? (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="font-semibold">Ошибки импорта</div>
+            <ul className="mt-2 space-y-1">
+              {importErrors.slice(0, 8).map((item) => (
+                <li key={`${item.row}-${item.message}`}>
+                  Строка {item.row}: {item.message}
+                </li>
+              ))}
+            </ul>
+            {importErrors.length > 8 ? <div className="mt-2">Показаны первые 8 ошибок.</div> : null}
+          </div>
+        ) : null}
+      </form>
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
         <form onSubmit={saveProduct} className="rounded-lg border border-border bg-panel p-4 shadow-sm">

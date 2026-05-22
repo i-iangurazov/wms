@@ -1041,3 +1041,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: managers get a Russian page to register product, variant, and location codes and download a CSV label list. Worker scanner flows continue to resolve scans without exposing technical registry details.
 - Architecture review: label codes are tenant-scoped and unique per organization, conflicts with existing product/location/order/work scan identifiers are blocked, and scan resolution deduplicates registry aliases against native SKU/barcode matches.
 - Remaining risk: no bulk import, no label print templates, no deactivate/edit UI, no route-level barcode registry tests, and no XLSX support.
+
+#### Phase 23: CSV Product Import Foundation
+
+- Status: implemented for CSV, not yet XLSX or full preview/commit workflow.
+- What changed: added product import parser/service, `/api/products/import`, Russian CSV upload panel on `Товары`, row-level validation errors, support for products, variants, primary barcodes, and additional barcode labels, plus parser unit tests.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: admins can import a CSV from the Russian Products page and get row-specific Russian errors instead of a generic failure.
+- Architecture review: product import is permission-gated, tenant-scoped, transactional, and creates barcode-label aliases through the registry table. It does not mutate stock.
+- Remaining risk: no XLSX parser, no dry-run preview screen, no update-existing mode, no route/database import tests, and DB uniqueness conflicts still need better row-level reporting.

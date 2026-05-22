@@ -82,6 +82,7 @@ export const auditActionLabels: Record<string, string> = {
   "warehouse_location.create": "Создана ячейка",
   "warehouse_location.update": "Изменена ячейка",
   "product.create": "Создан товар",
+  "product.import_csv": "Импортированы товары",
   "product.update": "Изменён товар",
   "product.deactivate": "Товар сделан недоступным",
   "product_variant.create": "Создан вариант товара",

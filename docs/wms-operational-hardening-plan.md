@@ -475,6 +475,12 @@ Status:
 - Validation: product import tests and build.
 - Continue when: row-level success/failure is tested.
 
+Status:
+- Implemented in this pass for CSV.
+- Added parser/service/API/UI with row-level Russian validation, products, variants, and additional barcode-label aliases.
+- Validation passed with `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build`.
+- Remaining hardening: XLSX support, dry-run preview, import route tests, update-existing mode, and richer conflict reporting.
+
 ### Phase C1: Receiving Operational Model
 
 - Goal: receive against expected lines with controlled exceptions.
