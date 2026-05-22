@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
@@ -244,7 +245,7 @@ export default function LocationsPage() {
         description="Настройте склады, зоны, ячейки, штрихкоды и назначение каждой ячейки."
       />
 
-      <section className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <section className={`${cardClass} mb-6`}>
         <div className="mb-4 flex flex-col gap-1">
           <h2 className="text-base font-semibold">Зоны</h2>
           <p className="text-sm text-muted">Зона помогает сгруппировать ячейки внутри склада. Можно оставить без зоны.</p>
@@ -308,7 +309,7 @@ export default function LocationsPage() {
         ) : null}
       </section>
 
-      <form onSubmit={saveLocation} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={saveLocation} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           <Field label={commonText.warehouse}>
             <select
@@ -406,14 +407,14 @@ export default function LocationsPage() {
         </div>
       </form>
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {loading ? <div className="text-sm text-muted">Загрузка ячеек...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {loading ? <LoadingState message="Загрузка ячеек..." /> : null}
       {!loading && locations.length === 0 ? (
         <EmptyState title={emptyStates.locationsTitle} body={emptyStates.locationsBody} />
       ) : null}
 
       {locations.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+        <div className={tableWrapClass}>
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
               <tr>

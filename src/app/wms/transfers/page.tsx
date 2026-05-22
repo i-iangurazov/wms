@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { buttonClass, Field, inputClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { QuantityStepper } from "@/components/wms/QuantityStepper";
@@ -26,8 +27,10 @@ export default function TransfersPage() {
   const [form, setForm] = useState({ fromLocationId: "", toLocationId: "", productId: "", quantity: 1, note: "" });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function loadData() {
+    setLoading(true);
     const [locationResponse, productResponse] = await Promise.all([
       fetch("/api/warehouse-locations", { cache: "no-store" }),
       fetch("/api/products", { cache: "no-store" })
@@ -36,6 +39,7 @@ export default function TransfersPage() {
     const productPayload = (await productResponse.json()) as { products?: Product[]; error?: string };
     if (!locationResponse.ok || !productResponse.ok) {
       setError(locationPayload.error ?? productPayload.error ?? "Не удалось загрузить данные перемещения.");
+      setLoading(false);
       return;
     }
     const activeLocations = (locationPayload.locations ?? []).filter((location) => location.status === "ACTIVE");
@@ -48,6 +52,7 @@ export default function TransfersPage() {
       toLocationId: current.toLocationId || activeLocations[1]?.id || "",
       productId: current.productId || nextProducts[0]?.id || ""
     }));
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -105,13 +110,14 @@ export default function TransfersPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
+      {loading ? <LoadingState message="Загрузка перемещения..." /> : null}
       <ScannerStepLayout
         title="Переместите товар"
         instruction="Сначала подтвердите исходную ячейку, затем товар, ячейку назначения и количество."
         scanHint="Сканируйте исходную ячейку, товар и ячейку назначения."
         resultHint="Остаток спишется из исходной ячейки и появится в ячейке назначения."
       >
-      <form onSubmit={submitTransfer} className="max-w-3xl rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={submitTransfer} className={`max-w-3xl ${cardClass}`}>
         <div className="grid gap-4 md:grid-cols-2">
           <ScanField
             label={scannerText.sourceLocation}

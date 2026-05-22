@@ -1158,3 +1158,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: worker flows are visually more consistent and less scaffold-like, with clearer loading states and calmer task surfaces. The screens are still operationally dense and need a browser/mobile visual pass before UI hardening can be called complete.
 - Architecture review: UI-only changes; stock movement service, transactions, movement ledger, permissions, and tenant isolation are unchanged.
 - Remaining risk: receiving/cycle-count tables still expose dense inline row controls, and there is no Playwright/mobile visual smoke test yet.
+
+#### Phase 36: UI Admin And Utility Screen Consistency Pass
+
+- Status: partially implemented; large admin pages still need decomposition and visual QA.
+- What changed: applied shared loading/error/card/table/button primitives to `Товары`, `Склады`, `Ячейки`, `Настройки`, `Задачи`, `Перемещения`, `Корректировки`, and `Проверка остатков`; destructive product actions now use the danger button style; setup tables use the shared horizontally scrollable table wrapper.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: active WMS screens are now much less browser-default/scaffold-like and use consistent Russian feedback states. The main remaining UI blocker is not shared primitives anymore; it is visual/mobile QA and reducing density in the largest admin/worker tables.
+- Architecture review: UI-only changes; no stock mutation, ledger, auth, permission, or tenant-isolation behavior changed.
+- Remaining risk: no automated browser/mobile visual test yet, and the settings/products screens remain dense despite using consistent primitives.

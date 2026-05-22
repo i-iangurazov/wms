@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { buttonClass, Field, inputClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, Field, inputClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { ScanField } from "@/components/wms/ScanField";
@@ -49,8 +50,10 @@ export default function AdjustmentsPage() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function loadData() {
+    setLoading(true);
     const [locationResponse, productResponse] = await Promise.all([
       fetch("/api/warehouse-locations", { cache: "no-store" }),
       fetch("/api/products", { cache: "no-store" })
@@ -59,6 +62,7 @@ export default function AdjustmentsPage() {
     const productPayload = (await productResponse.json()) as { products?: Product[]; error?: string };
     if (!locationResponse.ok || !productResponse.ok) {
       setError(locationPayload.error ?? productPayload.error ?? "Не удалось загрузить корректировку.");
+      setLoading(false);
       return;
     }
     const activeLocations = (locationPayload.locations ?? []).filter((location) => location.status === "ACTIVE");
@@ -70,6 +74,7 @@ export default function AdjustmentsPage() {
       locationId: current.locationId || activeLocations[0]?.id || "",
       productId: current.productId || nextProducts[0]?.id || ""
     }));
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -127,13 +132,14 @@ export default function AdjustmentsPage() {
       />
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
+      {loading ? <LoadingState message="Загрузка корректировки..." /> : null}
       <ScannerStepLayout
         title="Скорректируйте остаток"
         instruction="Выберите ячейку, товар, тип корректировки, причину и изменение количества. Для ручной коррекции обязательно примечание."
         scanHint="Сканируйте ячейку и товар."
         resultHint="Будет создана запись в истории движений, а остаток изменится через складской сервис."
       >
-      <form onSubmit={submitAdjustment} className="max-w-3xl rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={submitAdjustment} className={`max-w-3xl ${cardClass}`}>
         <div className="grid gap-4 md:grid-cols-2">
           <ScanField
             label={scannerText.location}

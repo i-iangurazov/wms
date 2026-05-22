@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { cardClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 
 type TaskCenterItem = {
@@ -67,14 +69,14 @@ export default function TasksPage() {
         description="Единый старт для ежедневной работы склада: что нужно сделать, где товар, какой статус и что делать дальше."
       />
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {!taskCenter && !error ? <div className="text-sm text-muted">Загрузка задач...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {!taskCenter && !error ? <LoadingState message="Загрузка задач..." /> : null}
 
       {taskCenter ? (
         <>
           <div className="grid gap-4 md:grid-cols-3">
             {(Object.keys(taskCenter.summary) as (keyof TaskCenter["summary"])[]).map((key) => (
-              <div key={key} className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+              <div key={key} className={cardClass}>
                 <div className="text-sm font-medium text-muted">{summaryLabels[key]}</div>
                 <div className="mt-2 text-2xl font-semibold text-ink">{taskCenter.summary[key]}</div>
               </div>
@@ -83,7 +85,7 @@ export default function TasksPage() {
 
           <div className="mt-6 grid gap-4 xl:grid-cols-2">
             {taskCenter.groups.map((group) => (
-              <section key={group.key} className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+              <section key={group.key} className={cardClass}>
                 <div className="mb-4">
                   <h2 className="text-base font-semibold text-ink">{group.title}</h2>
                   <p className="mt-1 text-sm text-muted">{group.description}</p>

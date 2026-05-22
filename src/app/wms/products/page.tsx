@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, dangerButtonClass, Field, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { commonText, emptyStates } from "@/lib/wmsText";
@@ -182,7 +183,7 @@ export default function ProductsPage() {
       <NoticeBanner kind="error" message={error} />
       <NoticeBanner kind="success" message={message} />
 
-      <form onSubmit={importProducts} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={importProducts} className={`${cardClass} mb-6`}>
         <div className="mb-3">
           <h2 className="text-base font-semibold">Импорт из CSV</h2>
           <p className="text-sm text-muted">
@@ -219,7 +220,7 @@ export default function ProductsPage() {
       </form>
 
       <div className="mb-6 grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <form onSubmit={saveProduct} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <form onSubmit={saveProduct} className={cardClass}>
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold">{productForm.id ? "Изменить товар" : "Новый товар"}</h2>
@@ -266,7 +267,7 @@ export default function ProductsPage() {
           </div>
         </form>
 
-        <form onSubmit={saveVariant} className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <form onSubmit={saveVariant} className={cardClass}>
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-semibold">{variantForm.id ? "Изменить вариант" : "Новый вариант"}</h2>
@@ -334,7 +335,7 @@ export default function ProductsPage() {
       </div>
 
       {products.length > 0 ? (
-        <div className="mb-4 rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <div className={`${cardClass} mb-4`}>
           <input
             className={inputClass}
             value={search}
@@ -344,7 +345,7 @@ export default function ProductsPage() {
         </div>
       ) : null}
 
-      {loading ? <div className="text-sm text-muted">Загрузка товаров...</div> : null}
+      {loading ? <LoadingState message="Загрузка товаров..." /> : null}
       {!loading && products.length === 0 ? (
         <EmptyState title={emptyStates.productsTitle} body={emptyStates.productsBody} />
       ) : null}
@@ -353,7 +354,7 @@ export default function ProductsPage() {
       ) : null}
 
       {filteredProducts.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+        <div className={tableWrapClass}>
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
               <tr>
@@ -383,7 +384,7 @@ export default function ProductsPage() {
                             </div>
                             <div className="mt-2 flex flex-wrap gap-2">
                               <button
-                                className={secondaryButtonClass}
+                                className={dangerButtonClass}
                                 type="button"
                                 onClick={() =>
                                   setVariantForm({
@@ -415,7 +416,7 @@ export default function ProductsPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex flex-wrap justify-end gap-2">
                       <button
-                        className={secondaryButtonClass}
+                        className={dangerButtonClass}
                         type="button"
                         onClick={() =>
                           setProductForm({

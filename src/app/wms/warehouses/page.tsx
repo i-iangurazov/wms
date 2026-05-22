@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { commonText, emptyStates } from "@/lib/wmsText";
@@ -100,7 +101,7 @@ export default function WarehousesPage() {
         description="Создавайте склады и управляйте их доступностью. История операций сохраняется."
       />
 
-      <form onSubmit={saveWarehouse} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+      <form onSubmit={saveWarehouse} className={`${cardClass} mb-6`}>
         <div className="grid gap-4 md:grid-cols-4">
           <Field label={commonText.code}>
             <input
@@ -145,14 +146,14 @@ export default function WarehousesPage() {
         </div>
       </form>
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {loading ? <div className="text-sm text-muted">Загрузка складов...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {loading ? <LoadingState message="Загрузка складов..." /> : null}
       {!loading && warehouses.length === 0 ? (
         <EmptyState title={emptyStates.warehousesTitle} body={emptyStates.warehousesBody} />
       ) : null}
 
       {warehouses.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+        <div className={tableWrapClass}>
           <table className="w-full border-collapse text-left text-sm">
             <thead className="bg-surface text-xs uppercase text-muted">
               <tr>

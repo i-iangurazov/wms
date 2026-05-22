@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { cardClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 
 type StockState = {
@@ -56,8 +58,8 @@ export default function ReconciliationPage() {
         title="Проверка остатков"
         description="Сравнение текущих остатков с суммой складских движений."
       />
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {!reconciliation && !error ? <div className="text-sm text-muted">Проверяем остатки...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {!reconciliation && !error ? <LoadingState message="Проверяем остатки..." /> : null}
       {reconciliation ? (
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
@@ -75,7 +77,7 @@ export default function ReconciliationPage() {
             </div>
           ) : null}
           {reconciliation.discrepancies.length > 0 ? (
-            <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+            <div className={tableWrapClass}>
               <table className="w-full border-collapse text-left text-sm">
                 <thead className="bg-surface text-xs uppercase text-muted">
                   <tr>
@@ -111,7 +113,7 @@ export default function ReconciliationPage() {
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border bg-panel p-4 shadow-sm">
+    <div className={cardClass}>
       <div className="text-sm text-muted">{label}</div>
       <div className="mt-1 text-2xl font-semibold">{value}</div>
     </div>

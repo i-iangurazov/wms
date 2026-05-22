@@ -2,7 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, dangerButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { ErrorState, LoadingState } from "@/components/FeedbackState";
+import { buttonClass, cardClass, dangerButtonClass, inputClass, secondaryButtonClass, tableWrapClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 
 type SettingsOverview = {
@@ -417,13 +418,13 @@ export default function SettingsPage() {
         description="Организация, права доступа и складские правила для самостоятельной WMS."
       />
 
-      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
-      {!overview && !error ? <div className="text-sm text-muted">Загрузка настроек...</div> : null}
+      {error ? <div className="mb-4"><ErrorState message={error} /></div> : null}
+      {!overview && !error ? <LoadingState message="Загрузка настроек..." /> : null}
 
       {overview ? (
         <div className="space-y-6">
           <div className="grid gap-4 lg:grid-cols-3">
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Организация</h2>
               <div className="mt-4 space-y-2 text-sm">
                 <InfoRow label="Название" value={overview.organization.name} />
@@ -432,7 +433,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Текущий пользователь</h2>
               <div className="mt-4 space-y-2 text-sm">
                 <InfoRow label="Имя" value={overview.currentUser.name} />
@@ -441,7 +442,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Доступ</h2>
               <p className="mt-4 text-sm text-muted">
                 {overview.auth.devFallbackAllowed
@@ -451,7 +452,7 @@ export default function SettingsPage() {
             </section>
           </div>
 
-          <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+          <section className={cardClass}>
             <h2 className="text-base font-semibold">Состояние данных</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {(Object.keys(overview.counts) as (keyof SettingsOverview["counts"])[]).map((key) => (
@@ -464,7 +465,7 @@ export default function SettingsPage() {
           </section>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Права WMS</h2>
               <p className="mt-1 text-sm text-muted">Права применяются на сервере для каждого действия.</p>
               <div className="mt-4 space-y-2">
@@ -484,7 +485,7 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Правила склада</h2>
               <div className="mt-4 space-y-3 text-sm text-muted">
                 <p>Остатки меняются только через складской сервис движений.</p>
@@ -496,7 +497,7 @@ export default function SettingsPage() {
           </div>
 
           {overview.permissions.includes("wms.manageLocations") ? (
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Складские правила</h2>
               <p className="mt-1 text-sm text-muted">
                 Настройте простые подсказки для приёмки, размещения, сборки и будущего пополнения. Сотрудники видят
@@ -504,7 +505,7 @@ export default function SettingsPage() {
               </p>
               {ruleMessage ? <div className="mt-4 rounded-md bg-surface p-3 text-sm text-muted">{ruleMessage}</div> : null}
 
-              {!rules ? <div className="mt-4 text-sm text-muted">Загрузка правил...</div> : null}
+              {!rules ? <LoadingState message="Загрузка правил..." /> : null}
 
               {rules ? (
                 <div className="mt-4 grid gap-5 xl:grid-cols-2">
@@ -720,7 +721,7 @@ export default function SettingsPage() {
             </section>
           ) : null}
 
-          <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+          <section className={cardClass}>
             <h2 className="text-base font-semibold">Организации</h2>
             <p className="mt-1 text-sm text-muted">
               Выбор организации сохраняется в защищённой сессии и применяется ко всем запросам WMS.
@@ -774,7 +775,7 @@ export default function SettingsPage() {
           </section>
 
           {overview.permissions.includes("users.manage") ? (
-            <section className="rounded-lg border border-border bg-panel p-5 shadow-sm">
+            <section className={cardClass}>
               <h2 className="text-base font-semibold">Пользователи</h2>
               <p className="mt-1 text-sm text-muted">
                 Добавляйте сотрудников в текущую организацию и назначайте им роль.
@@ -821,7 +822,7 @@ export default function SettingsPage() {
                 </button>
               </form>
 
-              <div className="mt-4 overflow-hidden rounded-lg border border-border">
+              <div className={`mt-4 ${tableWrapClass}`}>
                 <table className="w-full border-collapse text-left text-sm">
                   <thead className="bg-surface text-xs uppercase text-muted">
                     <tr>
