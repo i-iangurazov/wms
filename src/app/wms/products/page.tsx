@@ -4,9 +4,9 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { DataTable, Select } from "@/components/ui";
+import { ActionMenu, DataTable, Select } from "@/components/ui";
 import { NoticeBanner } from "@/components/wms/NoticeBanner";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
@@ -205,33 +205,34 @@ export default function ProductsPage() {
           <div className="space-y-2">
             {row.original.variants.map((variant) => (
               <div key={variant.id} className="rounded-lg border border-border bg-surface p-3">
-                <div className="font-medium">{variant.sku}</div>
-                <div className="mt-1 text-xs leading-5 text-muted">
-                  {variant.name} · {variant.barcode ?? "без штрихкода"}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    className={dangerButtonClass}
-                    type="button"
-                    onClick={() =>
-                      setVariantForm({
-                        id: variant.id,
-                        productId: row.original.id,
-                        sku: variant.sku,
-                        name: variant.name,
-                        barcode: variant.barcode ?? ""
-                      })
-                    }
-                  >
-                    {commonText.edit}
-                  </button>
-                  <button
-                    className={secondaryButtonClass}
-                    type="button"
-                    onClick={() => void deactivate(`/api/product-variants/${variant.id}`, "Вариант сделан недоступным.")}
-                  >
-                    {commonText.deactivate}
-                  </button>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{variant.sku}</div>
+                    <div className="mt-1 text-xs leading-5 text-muted">
+                      {variant.name} · {variant.barcode ?? "без штрихкода"}
+                    </div>
+                  </div>
+                  <ActionMenu
+                    items={[
+                      {
+                        label: commonText.edit,
+                        onSelect: () =>
+                          setVariantForm({
+                            id: variant.id,
+                            productId: row.original.id,
+                            sku: variant.sku,
+                            name: variant.name,
+                            barcode: variant.barcode ?? ""
+                          })
+                      },
+                      {
+                        label: commonText.deactivate,
+                        danger: true,
+                        onSelect: () =>
+                          void deactivate(`/api/product-variants/${variant.id}`, "Вариант сделан недоступным.")
+                      }
+                    ]}
+                  />
                 </div>
               </div>
             ))}
@@ -243,29 +244,25 @@ export default function ProductsPage() {
       id: "actions",
       header: commonText.actions,
       cell: ({ row }) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          <button
-            className={dangerButtonClass}
-            type="button"
-            onClick={() =>
-              setProductForm({
-                id: row.original.id,
-                sku: row.original.sku,
-                name: row.original.name,
-                barcode: row.original.barcode ?? ""
-              })
+        <ActionMenu
+          items={[
+            {
+              label: commonText.edit,
+              onSelect: () =>
+                setProductForm({
+                  id: row.original.id,
+                  sku: row.original.sku,
+                  name: row.original.name,
+                  barcode: row.original.barcode ?? ""
+                })
+            },
+            {
+              label: commonText.deactivate,
+              danger: true,
+              onSelect: () => void deactivate(`/api/products/${row.original.id}`, "Товар сделан недоступным.")
             }
-          >
-            {commonText.edit}
-          </button>
-          <button
-            className={secondaryButtonClass}
-            type="button"
-            onClick={() => void deactivate(`/api/products/${row.original.id}`, "Товар сделан недоступным.")}
-          >
-            {commonText.deactivate}
-          </button>
-        </div>
+          ]}
+        />
       ),
       meta: { align: "right", minWidth: "210px" }
     }

@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
 import { buttonClass, cardClass, dangerButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
-import { DataTable, Select } from "@/components/ui";
+import { ActionMenu, DataTable, Select } from "@/components/ui";
 
 type SettingsOverview = {
   organization: {
@@ -440,9 +440,15 @@ export default function SettingsPage() {
       id: "actions",
       header: "Действия",
       cell: ({ row }) => (
-        <button className={secondaryButtonClass} type="button" onClick={() => removeUser(row.original.id)}>
-          Удалить доступ
-        </button>
+        <ActionMenu
+          items={[
+            {
+              label: "Удалить доступ",
+              danger: true,
+              onSelect: () => removeUser(row.original.id)
+            }
+          ]}
+        />
       ),
       meta: { align: "right", minWidth: "170px" }
     }

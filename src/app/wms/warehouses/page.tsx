@@ -4,10 +4,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState, LoadingState } from "@/components/FeedbackState";
-import { buttonClass, cardClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { buttonClass, cardClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
-import { DataTable, Select } from "@/components/ui";
+import { ActionMenu, DataTable, Select } from "@/components/ui";
 import { commonText, emptyStates } from "@/lib/wmsText";
 
 type Warehouse = {
@@ -125,19 +125,17 @@ export default function WarehousesPage() {
       id: "actions",
       header: commonText.actions,
       cell: ({ row }) => (
-        <div className="flex flex-wrap justify-end gap-2">
-          <button className={ghostButtonClass} type="button" onClick={() => startEdit(row.original)}>
-            {commonText.edit}
-          </button>
-          <button
-            className={dangerButtonClass}
-            disabled={row.original.status === "INACTIVE"}
-            type="button"
-            onClick={() => void deactivateWarehouse(row.original.id)}
-          >
-            {commonText.deactivate}
-          </button>
-        </div>
+        <ActionMenu
+          items={[
+            { label: commonText.edit, onSelect: () => startEdit(row.original) },
+            {
+              label: commonText.deactivate,
+              danger: true,
+              disabled: row.original.status === "INACTIVE",
+              onSelect: () => void deactivateWarehouse(row.original.id)
+            }
+          ]}
+        />
       ),
       meta: { align: "right", minWidth: "240px" }
     }

@@ -1221,3 +1221,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - Architecture review: stock mutation rules remain unchanged. The receiving route fix makes the UI safer without changing service boundaries; receive operations still go through the existing receiving API and stock service.
 - Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
 - Remaining risk: row actions still use page-local buttons instead of shared dropdown/action menus, and worker line tables need mobile-specific scanner cards before UI hardening can be called complete.
+
+#### Phase 43: Shared Row Action Menu
+
+- Status: implemented and validated at UI foundation level.
+- What changed: added `ActionMenu` on top of the existing Radix dropdown primitive, added disabled-state support to dropdown items, and migrated crowded row actions for warehouses, locations, products, product variants, and settings user access to compact shared menus.
+- UX review: admin tables now feel less cramped and less like database scaffolding. Destructive actions are still visible inside the menu with danger styling and disabled state where applicable.
+- Architecture review: UI-only change; no stock, auth, permission, tenant-isolation, or ledger behavior changed.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
+- Remaining risk: some operational pages intentionally keep explicit action buttons because workers need direct next actions. Future passes should add menus only where they reduce clutter without hiding the primary warehouse task.

@@ -22,16 +22,19 @@ export function DropdownContent({ children }: { children: React.ReactNode }) {
 export function DropdownItem({
   children,
   onSelect,
-  danger = false
+  danger = false,
+  disabled = false
 }: {
   children: React.ReactNode;
   onSelect?: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <RadixDropdown.Item
-      onSelect={onSelect}
-      className={`cursor-default rounded-md px-3 py-2 text-sm outline-none data-[highlighted]:bg-surface ${
+      disabled={disabled}
+      onSelect={disabled ? undefined : onSelect}
+      className={`cursor-default rounded-md px-3 py-2 text-sm outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-45 data-[highlighted]:bg-surface ${
         danger ? "text-danger" : "text-ink"
       }`}
     >

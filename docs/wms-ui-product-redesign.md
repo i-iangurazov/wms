@@ -230,7 +230,7 @@ Current limitation: the operational E2E uses API setup/execution for parts of re
 - Replace native selects in active WMS pages with shared `Select`.
 - Replace custom tables with shared `DataTable`.
 - Replace page-specific actions with `Button`, `Dropdown`, `Dialog`.
-- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`, and active page tables have been migrated to the shared TanStack `DataTable`; action/menu/modal migration remains open.
+- Status: PARTIAL. Native WMS selects have been replaced with shared `Select`, active page tables have been migrated to the shared TanStack `DataTable`, and a shared `ActionMenu` is now used for the busiest admin row actions. Dialog/modal and full row-action migration remain open.
 
 ### UI-R4: Worker Workflow Redesign
 

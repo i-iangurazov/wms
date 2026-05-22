@@ -1050,7 +1050,7 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Goal: move from scaffold-like UI to a serious SaaS design foundation.
 - Tasks: adopt lucide/Radix/shared primitives, replace fake nav icons, replace empty-state circles, use real Select components, redesign dashboard as an operational command center, and migrate active pages to shared primitives.
 - Validation: typecheck, lint, unit tests, DB smoke, build, UI smoke, Playwright E2E.
-- Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select across active pages, a shared TanStack `DataTable`, dashboard redesign, and E2E harness are implemented and validated. Active page migration is no longer blocked by raw selects or page-local tables, but row-action menus, mobile-specific worker cards, form decomposition, and full click-through scanner E2E remain incomplete.
+- Status: PARTIAL. Shared primitives, real icons, icon empty states, Radix Select across active pages, a shared TanStack `DataTable`, compact `ActionMenu` for crowded admin row actions, dashboard redesign, and E2E harness are implemented and validated. Active page migration is no longer blocked by raw selects or page-local tables, but mobile-specific worker cards, form decomposition, dialogs, and full click-through scanner E2E remain incomplete.
 
 ### Phase O1: Production Operations
 
