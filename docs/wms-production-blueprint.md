@@ -996,6 +996,7 @@ The roadmap is intentionally phase-based but not fixed-count. Split any phase if
 - Validation: unit tests, DB service tests, typecheck, lint, build.
 - Continue when: split-bin reservation and release pass tests.
 - Stop if: stock movement model cannot represent reservation without unsafe ledger ambiguity.
+- Status: IMPLEMENTED at service/API foundation level. Added `RESERVE` and `RELEASE_RESERVATION` movement types, `ReservationService`, `/api/reservations`, stock-state reserve/release through `StockMovementService`, audit events, and DB smoke coverage. Still not wired into pick work generation; Phase R3 remains required.
 
 ### Phase R3: Allocation-Driven Pick Work
 

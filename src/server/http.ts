@@ -165,6 +165,13 @@ const russianErrorMessages: Record<string, string> = {
   "Order number is too long.": "Номер заказа слишком длинный.",
   "Order quantity must be a positive whole number.": "Количество в заказе должно быть положительным целым числом.",
   "Order number already exists.": "Заказ с таким номером уже есть.",
+  "Invalid reservation action.": "Некорректное действие резерва.",
+  "Order must be open before allocation.": "Резервировать можно только открытый заказ.",
+  "Order already has active reservations.": "По заказу уже есть активный резерв.",
+  "Insufficient stock for order allocation.": "Недостаточно доступного товара для резерва заказа.",
+  "Cannot release reservations after pick work was created.":
+    "Нельзя снять резерв после создания задания на сборку.",
+  "No active reservations found.": "Активный резерв не найден.",
   "Pick work already exists for this order.": "Задание на сборку для этого заказа уже создано.",
   "No pickable stock location can satisfy an order line.": "Нет подходящей ячейки сборки с нужным товаром.",
   "Pick line not found.": "Шаг сборки не найден.",

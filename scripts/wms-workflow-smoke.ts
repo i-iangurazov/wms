@@ -26,6 +26,7 @@ async function main() {
     "@/server/services/cycleCountService"
   );
   const { createCustomerOrder } = await import("@/server/services/orderService");
+  const { allocateOrderStock, releaseOrderReservations } = await import("@/server/services/reservationService");
   const { confirmPickLine, createPickWorkFromOrder } = await import("@/server/services/pickingService");
   const { availableQuantity, variantKey } = await import("@/server/services/stockMovementEngine");
   const { listAuditLogs } = await import("@/server/services/auditService");
@@ -312,6 +313,51 @@ async function main() {
       note: "Integration damaged stock"
     });
 
+    const reservationOrder = await createCustomerOrder(context, {
+      number: `RESERVE-${suffix}`,
+      productId: product.id,
+      quantity: 1
+    });
+    const reservationKey = `reserve-${suffix}`;
+    const reservations = await allocateOrderStock(context, {
+      orderId: reservationOrder.id,
+      warehouseId: warehouse.id,
+      idempotencyKey: reservationKey
+    });
+    assert.equal(reservations.length, 1);
+    const replayedReservations = await allocateOrderStock(context, {
+      orderId: reservationOrder.id,
+      warehouseId: warehouse.id,
+      idempotencyKey: reservationKey
+    });
+    assert.equal(replayedReservations.length, 1);
+    await assert.rejects(
+      () => allocateOrderStock(otherContext, { orderId: reservationOrder.id, warehouseId: warehouse.id }),
+      /Order not found/
+    );
+    const reservedBalance = await prisma.inventoryLocationBalance.findUniqueOrThrow({
+      where: {
+        storeId_locationId_productId_variantKey: {
+          storeId: store.id,
+          locationId: picking.id,
+          productId: product.id,
+          variantKey: variantKey(null)
+        }
+      }
+    });
+    assert.equal(reservedBalance.reservedQty, 1);
+    assert.equal(availableQuantity(reservedBalance), 3);
+    const releasedCount = await releaseOrderReservations(context, {
+      orderId: reservationOrder.id,
+      idempotencyKey: `release-${suffix}`
+    });
+    assert.equal(releasedCount, 1);
+    const replayedReleaseCount = await releaseOrderReservations(context, {
+      orderId: reservationOrder.id,
+      idempotencyKey: `release-${suffix}`
+    });
+    assert.equal(replayedReleaseCount, 0);
+
     const count = await createCycleCount(context, { warehouseId: warehouse.id, locationId: storage.id });
     const countLine = await prisma.cycleCountLine.findFirstOrThrow({
       where: { sessionId: count.id, productId: product.id }
@@ -410,6 +456,7 @@ async function main() {
       }
     });
     assert.equal(pickingBalance.onHandQty, 2);
+    assert.equal(pickingBalance.reservedQty, 0);
     assert.equal(pickingBalance.damagedQty, 1);
     assert.equal(availableQuantity(pickingBalance), 1);
 
@@ -431,7 +478,17 @@ async function main() {
     });
     assert.deepEqual(
       movements.map((movement) => movement.type),
-      ["RECEIVE", "PUTAWAY", "TRANSFER", "ADJUSTMENT", "CYCLE_COUNT_CORRECTION", "PICK", "TRANSFER"]
+      [
+        "RECEIVE",
+        "PUTAWAY",
+        "TRANSFER",
+        "ADJUSTMENT",
+        "RESERVE",
+        "RELEASE_RESERVATION",
+        "CYCLE_COUNT_CORRECTION",
+        "PICK",
+        "TRANSFER"
+      ]
     );
 
     const auditLogs = await listAuditLogs(context);

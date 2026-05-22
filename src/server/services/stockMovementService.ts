@@ -62,6 +62,10 @@ function requireMovementPermission(context: RequestContext, input: MovementInput
     requirePermission(context.role, "picking.execute");
     return;
   }
+  if (input.type === "RESERVE" || input.type === "RELEASE_RESERVATION") {
+    requirePermission(context.role, "picking.create");
+    return;
+  }
   requirePermission(context.role, input.type === "PUTAWAY" ? "putaway.execute" : "transfers.execute");
 }
 

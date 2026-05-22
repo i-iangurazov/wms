@@ -1104,3 +1104,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: warehouse workers now start from an actionable Russian task list with status, next action, location/product context, loading state, empty states, and access-denied behavior inherited from route protection.
 - Architecture review: the service is read-only, tenant-scoped by `storeId`, permission-gated server-side, and filters worker-visible warehouse work to unassigned or self-assigned work.
 - Remaining risk: the task center does not yet support assignment changes, priority sorting beyond updated time, exception queues, or browser/mobile E2E proof of executing a task from the new screen.
+
+#### Phase 30: Reservation Service And Stock-State Ledger
+
+- Status: implemented at service/API foundation level; picking is not yet allocation-driven.
+- What changed: added additive movement enum values `RESERVE` and `RELEASE_RESERVATION`, migration `20260522090000_reservation_movement_types`, `ReservationService`, `/api/reservations`, Russian movement/audit labels, Russian reservation errors, and DB smoke coverage for reserve, replay, release, cross-organization rejection, reserved quantity, available quantity, and ledger movement order.
+- Validation: `pnpm prisma:generate`, `pnpm exec prisma migrate deploy`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: no new visible worker screen yet; API errors and movement labels are Russian. Allocation UI remains a gap for the picking page.
+- Architecture review: reservation and release change `reservedQty` only through `StockMovementService`, create append-only movement rows, run in a transaction, preserve store isolation, and audit sensitive reservation changes.
+- Remaining risk: `createPickWorkFromOrder` still selects balances directly instead of consuming reservations. Phase R3 must generate pick work from reservations, support split-bin lines, release reservations on cancel/short-pick, and expose a simple Russian allocation action in the picking flow.

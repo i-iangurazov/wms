@@ -34,6 +34,9 @@ export const statusLabels: Record<string, string> = {
   PACKING: "Упаковка",
   PACKED: "Упаковано",
   READY_TO_SHIP: "Передан в отгрузку",
+  RESERVED: "Зарезервировано",
+  RELEASED: "Резерв снят",
+  SHORT: "Недостаточно товара",
   SHORT_PICK_REVIEW: "Требует проверки"
 };
 
@@ -53,6 +56,8 @@ export const movementTypeLabels: Record<string, string> = {
   TRANSFER: "Перемещение",
   ADJUSTMENT: "Корректировка",
   CYCLE_COUNT_CORRECTION: "Инвентаризация",
+  RESERVE: "Резервирование",
+  RELEASE_RESERVATION: "Снятие резерва",
   PICK: "Сборка заказа"
 };
 
@@ -85,6 +90,8 @@ export const auditActionLabels: Record<string, string> = {
   "product_variant.update": "Изменён вариант товара",
   "product_variant.deactivate": "Вариант сделан недоступным",
   "customer_order.create": "Создан заказ",
+  "inventory_reservation.create": "Создан резерв",
+  "inventory_reservation.release": "Снят резерв",
   "receiving_session.create": "Создана приёмка",
   "receiving_line.create": "Добавлен товар в приёмку",
   "receiving_line.receive": "Товар принят",
