@@ -1,0 +1,681 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  WAREHOUSE_MANAGER
+  WAREHOUSE_WORKER
+  VIEWER
+  MANAGER
+  STAFF
+  CASHIER
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LocationType {
+  RECEIVING
+  STORAGE
+  PICKING
+  PACKING
+  SHIPPING
+  RETURNS
+  DAMAGED
+}
+
+enum InventoryMovementType {
+  RECEIVE
+  PUTAWAY
+  TRANSFER
+  ADJUSTMENT
+  CYCLE_COUNT_CORRECTION
+  PICK
+}
+
+enum AdjustmentReason {
+  DAMAGED
+  LOST
+  FOUND
+  COUNT_CORRECTION
+  MANUAL_CORRECTION
+  EXPIRED
+  RETURNED_TO_STOCK
+}
+
+enum ReceivingStatus {
+  DRAFT
+  RECEIVING
+  COMPLETED
+  CANCELLED
+}
+
+enum ReceivingLineStatus {
+  OPEN
+  RECEIVED
+  CANCELLED
+}
+
+enum WarehouseWorkType {
+  PICK
+  PUTAWAY
+  REPLENISHMENT
+  PACK
+}
+
+enum WarehouseWorkTemplateType {
+  RECEIVE
+  PUTAWAY
+  TRANSFER
+  REPLENISHMENT
+  PICK
+  PACK
+}
+
+enum WarehouseLocationDirectiveType {
+  DEFAULT_RECEIVING_LOCATION
+  PREFERRED_PUTAWAY_ZONE
+  PICKABLE_LOCATION
+  DAMAGED_LOCATION
+  REPLENISHMENT_SOURCE_ZONE
+  REPLENISHMENT_DESTINATION_ZONE
+}
+
+enum WarehouseWorkStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WarehouseWorkLineStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CycleCountStatus {
+  DRAFT
+  COUNTING
+  PENDING_APPROVAL
+  APPROVED
+  CANCELLED
+}
+
+enum OrderStatus {
+  OPEN
+  ALLOCATED
+  PICKING
+  PICKED
+  PACKING
+  PACKED
+  READY_TO_SHIP
+  CANCELLED
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  name               String
+  passwordHash       String?
+  role               Role                @default(STAFF)
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  storeUsers         StoreUser[]
+  auditLogs          AuditLog[]
+  receivingSessions  ReceivingSession[]  @relation("ReceivingCreatedBy")
+  warehouseWorkItems WarehouseWork[]     @relation("WorkCreatedBy")
+  assignedWorkItems  WarehouseWork[]     @relation("WorkAssignedTo")
+  cycleCounts        CycleCountSession[] @relation("CycleCountCreatedBy")
+  approvedCounts     CycleCountSession[] @relation("CycleCountApprovedBy")
+  movements          InventoryMovement[]
+  stockCommands      StockCommand[]
+  sessions           UserSession[]
+
+  @@map("users")
+}
+
+model Store {
+  id                 String                       @id @default(cuid())
+  name               String
+  code               String                       @unique
+  active             Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  users              StoreUser[]
+  products           Product[]
+  variants           ProductVariant[]
+  warehouses         Warehouse[]
+  zones              WarehouseZone[]
+  locations          WarehouseLocation[]
+  workTemplates      WarehouseWorkTemplate[]
+  locationDirectives WarehouseLocationDirective[]
+  replenishmentRules ReplenishmentRule[]
+  balances           InventoryLocationBalance[]
+  movements          InventoryMovement[]
+  stockCommands      StockCommand[]
+  receiving          ReceivingSession[]
+  work               WarehouseWork[]
+  cycleCounts        CycleCountSession[]
+  orders             CustomerOrder[]
+  auditLogs          AuditLog[]
+  sessions           UserSession[]
+
+  @@map("stores")
+}
+
+model StoreUser {
+  id        String   @id @default(cuid())
+  storeId   String
+  userId    String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, userId])
+  @@index([userId])
+  @@map("store_users")
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  storeId   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([storeId])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+model Product {
+  id                 String                     @id @default(cuid())
+  storeId            String
+  sku                String
+  name               String
+  barcode            String?
+  active             Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  store              Store                      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  variants           ProductVariant[]
+  balances           InventoryLocationBalance[]
+  movements          InventoryMovement[]
+  replenishmentRules ReplenishmentRule[]
+  orderLines         CustomerOrderLine[]
+  receiving          ReceivingLine[]
+  workLines          WarehouseWorkLine[]
+  countLines         CycleCountLine[]
+
+  @@unique([storeId, sku])
+  @@unique([storeId, barcode])
+  @@index([storeId, name])
+  @@map("products")
+}
+
+model ProductVariant {
+  id                 String                     @id @default(cuid())
+  storeId            String
+  productId          String
+  sku                String
+  name               String
+  barcode            String?
+  active             Boolean                    @default(true)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  store              Store                      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product            Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  balances           InventoryLocationBalance[]
+  movements          InventoryMovement[]
+  replenishmentRules ReplenishmentRule[]
+  orderLines         CustomerOrderLine[]
+  receiving          ReceivingLine[]
+  workLines          WarehouseWorkLine[]
+  countLines         CycleCountLine[]
+
+  @@unique([storeId, sku])
+  @@unique([storeId, barcode])
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Warehouse {
+  id                 String                       @id @default(cuid())
+  storeId            String
+  code               String
+  name               String
+  status             WarehouseStatus              @default(ACTIVE)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  store              Store                        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  zones              WarehouseZone[]
+  locations          WarehouseLocation[]
+  workTemplates      WarehouseWorkTemplate[]
+  locationDirectives WarehouseLocationDirective[]
+  replenishmentRules ReplenishmentRule[]
+  balances           InventoryLocationBalance[]
+  movements          InventoryMovement[]
+  receiving          ReceivingSession[]
+  work               WarehouseWork[]
+  counts             CycleCountSession[]
+
+  @@unique([storeId, code])
+  @@index([storeId, status])
+  @@map("warehouses")
+}
+
+model WarehouseZone {
+  id                 String                       @id @default(cuid())
+  storeId            String
+  warehouseId        String
+  code               String
+  name               String
+  status             WarehouseStatus              @default(ACTIVE)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  store              Store                        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse          Warehouse                    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  locations          WarehouseLocation[]
+  locationDirectives WarehouseLocationDirective[]
+  replenishmentRules ReplenishmentRule[]
+
+  @@unique([warehouseId, code])
+  @@index([storeId, warehouseId, status])
+  @@map("warehouse_zones")
+}
+
+model WarehouseLocation {
+  id                       String                       @id @default(cuid())
+  storeId                  String
+  warehouseId              String
+  zoneId                   String?
+  code                     String
+  barcode                  String?
+  type                     LocationType
+  status                   WarehouseStatus              @default(ACTIVE)
+  isPickable               Boolean                      @default(false)
+  isReceivable             Boolean                      @default(false)
+  isSellable               Boolean                      @default(false)
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  store                    Store                        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse                Warehouse                    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  zone                     WarehouseZone?               @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  locationDirectives       WarehouseLocationDirective[]
+  replenishmentPickRules   ReplenishmentRule[]          @relation("ReplenishmentPickLocation")
+  replenishmentSourceRules ReplenishmentRule[]          @relation("ReplenishmentSourceLocation")
+  balances                 InventoryLocationBalance[]
+  fromMovements            InventoryMovement[]          @relation("MovementFromLocation")
+  toMovements              InventoryMovement[]          @relation("MovementToLocation")
+  receivingSessions        ReceivingSession[]
+  sourceWorkLines          WarehouseWorkLine[]          @relation("WorkSourceLocation")
+  destinationWork          WarehouseWorkLine[]          @relation("WorkDestinationLocation")
+  cycleCounts              CycleCountSession[]
+
+  @@unique([warehouseId, code])
+  @@unique([storeId, barcode])
+  @@index([storeId, type, status])
+  @@index([zoneId])
+  @@map("warehouse_locations")
+}
+
+model WarehouseWorkTemplate {
+  id          String                    @id @default(cuid())
+  storeId     String
+  warehouseId String
+  type        WarehouseWorkTemplateType
+  name        String
+  priority    Int                       @default(100)
+  active      Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  store       Store                     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse                 @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, warehouseId, type, name])
+  @@index([storeId, warehouseId, type, active])
+  @@map("warehouse_work_templates")
+}
+
+model WarehouseLocationDirective {
+  id          String                         @id @default(cuid())
+  storeId     String
+  warehouseId String
+  type        WarehouseLocationDirectiveType
+  name        String
+  priority    Int                            @default(100)
+  active      Boolean                        @default(true)
+  zoneId      String?
+  locationId  String?
+  createdAt   DateTime                       @default(now())
+  updatedAt   DateTime                       @updatedAt
+  store       Store                          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse                      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  zone        WarehouseZone?                 @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  location    WarehouseLocation?             @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([storeId, warehouseId, type, active])
+  @@index([zoneId])
+  @@index([locationId])
+  @@map("warehouse_location_directives")
+}
+
+model ReplenishmentRule {
+  id               String             @id @default(cuid())
+  storeId          String
+  warehouseId      String
+  productId        String
+  variantId        String?
+  variantKey       String
+  pickLocationId   String
+  sourceLocationId String?
+  sourceZoneId     String?
+  minQty           Int
+  maxQty           Int
+  active           Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  store            Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product          Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant          ProductVariant?    @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  pickLocation     WarehouseLocation  @relation("ReplenishmentPickLocation", fields: [pickLocationId], references: [id], onDelete: Restrict)
+  sourceLocation   WarehouseLocation? @relation("ReplenishmentSourceLocation", fields: [sourceLocationId], references: [id], onDelete: SetNull)
+  sourceZone       WarehouseZone?     @relation(fields: [sourceZoneId], references: [id], onDelete: SetNull)
+  work             WarehouseWork[]
+
+  @@unique([storeId, pickLocationId, productId, variantKey])
+  @@index([storeId, warehouseId, active])
+  @@index([sourceLocationId])
+  @@index([sourceZoneId])
+  @@map("replenishment_rules")
+}
+
+model InventoryLocationBalance {
+  id          String            @id @default(cuid())
+  storeId     String
+  warehouseId String
+  locationId  String
+  productId   String
+  variantId   String?
+  variantKey  String
+  quantity    Int               @default(0)
+  onHandQty   Int               @default(0)
+  reservedQty Int               @default(0)
+  pickedQty   Int               @default(0)
+  damagedQty  Int               @default(0)
+  blockedQty  Int               @default(0)
+  updatedAt   DateTime          @updatedAt
+  store       Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse   Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  location    WarehouseLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([storeId, locationId, productId, variantKey])
+  @@index([storeId, warehouseId])
+  @@index([storeId, productId, variantKey])
+  @@map("inventory_location_balances")
+}
+
+model InventoryMovement {
+  id                String                @id @default(cuid())
+  storeId           String
+  warehouseId       String?
+  fromLocationId    String?
+  toLocationId      String?
+  productId         String
+  variantId         String?
+  variantKey        String
+  type              InventoryMovementType
+  reason            AdjustmentReason?
+  quantity          Int
+  fromOnHandDelta   Int                   @default(0)
+  fromReservedDelta Int                   @default(0)
+  fromPickedDelta   Int                   @default(0)
+  fromDamagedDelta  Int                   @default(0)
+  fromBlockedDelta  Int                   @default(0)
+  toOnHandDelta     Int                   @default(0)
+  toReservedDelta   Int                   @default(0)
+  toPickedDelta     Int                   @default(0)
+  toDamagedDelta    Int                   @default(0)
+  toBlockedDelta    Int                   @default(0)
+  note              String?
+  referenceType     String?
+  referenceId       String?
+  createdById       String
+  createdAt         DateTime              @default(now())
+  store             Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse         Warehouse?            @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  fromLocation      WarehouseLocation?    @relation("MovementFromLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
+  toLocation        WarehouseLocation?    @relation("MovementToLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+  product           Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant           ProductVariant?       @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  createdBy         User                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  stockCommand      StockCommand?
+
+  @@index([storeId, createdAt])
+  @@index([storeId, productId, variantKey])
+  @@index([storeId, type])
+  @@map("inventory_movements")
+}
+
+model StockCommand {
+  id             String                @id @default(cuid())
+  storeId        String
+  idempotencyKey String
+  fingerprint    String
+  operation      InventoryMovementType
+  movementId     String?               @unique
+  createdById    String
+  createdAt      DateTime              @default(now())
+  store          Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  movement       InventoryMovement?    @relation(fields: [movementId], references: [id], onDelete: SetNull)
+  createdBy      User                  @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@unique([storeId, idempotencyKey])
+  @@index([storeId, createdAt])
+  @@map("stock_commands")
+}
+
+model ReceivingSession {
+  id                  String            @id @default(cuid())
+  storeId             String
+  warehouseId         String
+  receivingLocationId String
+  reference           String?
+  status              ReceivingStatus   @default(DRAFT)
+  note                String?
+  createdById         String
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  completedAt         DateTime?
+  store               Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  receivingLocation   WarehouseLocation @relation(fields: [receivingLocationId], references: [id], onDelete: Restrict)
+  createdBy           User              @relation("ReceivingCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  lines               ReceivingLine[]
+
+  @@index([storeId, status])
+  @@map("receiving_sessions")
+}
+
+model ReceivingLine {
+  id          String              @id @default(cuid())
+  sessionId   String
+  productId   String
+  variantId   String?
+  variantKey  String
+  expectedQty Int                 @default(0)
+  receivedQty Int                 @default(0)
+  status      ReceivingLineStatus @default(OPEN)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  session     ReceivingSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product     Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@map("receiving_lines")
+}
+
+model WarehouseWork {
+  id                  String              @id @default(cuid())
+  storeId             String
+  warehouseId         String
+  type                WarehouseWorkType
+  status              WarehouseWorkStatus @default(OPEN)
+  sourceOrderId       String?
+  replenishmentRuleId String?
+  createdById         String
+  assignedToId        String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  completedAt         DateTime?
+  store               Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse           Warehouse           @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  sourceOrder         CustomerOrder?      @relation(fields: [sourceOrderId], references: [id], onDelete: SetNull)
+  replenishmentRule   ReplenishmentRule?  @relation(fields: [replenishmentRuleId], references: [id], onDelete: SetNull)
+  createdBy           User                @relation("WorkCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  assignedTo          User?               @relation("WorkAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  lines               WarehouseWorkLine[]
+
+  @@index([storeId, type, status])
+  @@index([replenishmentRuleId])
+  @@map("warehouse_work")
+}
+
+model WarehouseWorkLine {
+  id                    String                  @id @default(cuid())
+  workId                String
+  sourceLocationId      String
+  destinationLocationId String?
+  productId             String
+  variantId             String?
+  variantKey            String
+  quantity              Int
+  pickedQuantity        Int                     @default(0)
+  completedQuantity     Int                     @default(0)
+  status                WarehouseWorkLineStatus @default(OPEN)
+  exceptionReason       String?
+  locationConfirmedAt   DateTime?
+  productConfirmedAt    DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  work                  WarehouseWork           @relation(fields: [workId], references: [id], onDelete: Cascade)
+  sourceLocation        WarehouseLocation       @relation("WorkSourceLocation", fields: [sourceLocationId], references: [id], onDelete: Restrict)
+  destinationLocation   WarehouseLocation?      @relation("WorkDestinationLocation", fields: [destinationLocationId], references: [id], onDelete: SetNull)
+  product               Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant               ProductVariant?         @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([workId, status])
+  @@map("warehouse_work_lines")
+}
+
+model CycleCountSession {
+  id           String            @id @default(cuid())
+  storeId      String
+  warehouseId  String
+  locationId   String
+  status       CycleCountStatus  @default(DRAFT)
+  createdById  String
+  approvedById String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  approvedAt   DateTime?
+  store        Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  warehouse    Warehouse         @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  location     WarehouseLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy    User              @relation("CycleCountCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  approvedBy   User?             @relation("CycleCountApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines        CycleCountLine[]
+
+  @@index([storeId, status])
+  @@map("cycle_count_sessions")
+}
+
+model CycleCountLine {
+  id          String            @id @default(cuid())
+  sessionId   String
+  productId   String
+  variantId   String?
+  variantKey  String
+  expectedQty Int
+  countedQty  Int?
+  difference  Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  session     CycleCountSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant     ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, productId, variantKey])
+  @@map("cycle_count_lines")
+}
+
+model CustomerOrder {
+  id        String              @id @default(cuid())
+  storeId   String
+  number    String
+  status    OrderStatus         @default(OPEN)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  store     Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  lines     CustomerOrderLine[]
+  work      WarehouseWork[]
+
+  @@unique([storeId, number])
+  @@index([storeId, status])
+  @@map("customer_orders")
+}
+
+model CustomerOrderLine {
+  id         String          @id @default(cuid())
+  orderId    String
+  productId  String
+  variantId  String?
+  variantKey String
+  quantity   Int
+  createdAt  DateTime        @default(now())
+  order      CustomerOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("customer_order_lines")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  storeId    String?
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  store      Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([storeId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

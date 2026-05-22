@@ -1,0 +1,5 @@
+-- RenameIndex
+ALTER INDEX "replenishment_rules_storeId_pickLocationId_productId_variantKey" RENAME TO "replenishment_rules_storeId_pickLocationId_productId_varian_key";
+
+-- RenameIndex
+ALTER INDEX "warehouse_location_directives_storeId_warehouseId_type_active_i" RENAME TO "warehouse_location_directives_storeId_warehouseId_type_acti_idx";

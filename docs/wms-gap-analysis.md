@@ -1,0 +1,1025 @@
+# Standalone WMS Production Gap Analysis
+
+## Current Verdict
+
+The current application is an initial standalone WMS draft with several real foundations, not a business-ready production MVP yet.
+
+It has useful models, service boundaries, Russian UI screens, critical stock-rule tests, a production-oriented email/password session path, simple work-template/location-rule configuration, and MVP replenishment. However, it is still shallow in places that matter for real warehouse work: replenishment has only basic min/max rules, the directive engine is intentionally MVP-level, packing/shipping handoff is missing, product import and label printing are missing, scanner workflows do not have true browser/e2e coverage, and several exception paths are only partially modeled.
+
+This document is the hardening source of truth. Do not mark the WMS as complete until the remaining gaps are closed or explicitly documented as non-MVP/product-decision items.
+
+## 1. What Currently Exists
+
+### Data Models
+
+Existing Prisma models:
+
+- `User`
+- `Store` as current tenant/company/store boundary
+- `StoreUser`
+- `Product`
+- `ProductVariant`
+- `CustomerOrder`
+- `CustomerOrderLine`
+- `AuditLog`
+- `Warehouse`
+- `WarehouseZone`
+- `WarehouseLocation`
+- `WarehouseWorkTemplate`
+- `WarehouseLocationDirective`
+- `ReplenishmentRule`
+- `InventoryLocationBalance`
+- `InventoryMovement`
+- `ReceivingSession`
+- `ReceivingLine`
+- `WarehouseWork`
+- `WarehouseWorkLine`
+- `CycleCountSession`
+- `CycleCountLine`
+
+Existing enums:
+
+- roles: `OWNER`, `ADMIN`, `WAREHOUSE_MANAGER`, `WAREHOUSE_WORKER`, `VIEWER`, plus legacy compatibility roles `MANAGER`, `STAFF`, `CASHIER`
+- warehouse/location status
+- location type
+- movement type
+- adjustment reason
+- receiving status
+- work status
+- cycle count status
+- order status
+
+Current stock state:
+
+- `onHandQty`
+- `reservedQty`
+- `pickedQty`
+- `damagedQty`
+- `blockedQty`
+- `availableQty` calculated in service
+- `unavailableQty` calculated in service
+
+### Services
+
+Existing service modules:
+
+- `WarehouseService`
+- `LocationService`
+- `ProductService`
+- `StockMovementService`
+- `ReceivingService`
+- `PutawayService`
+- `TransferService`
+- `AdjustmentService`
+- `CycleCountService`
+- `PickingService`
+- `BarcodeService`
+- `WarehouseRuleService`
+- `ReplenishmentService`
+- `DashboardService`
+- `SettingsService`
+- `AuditService`
+
+Strong foundation:
+
+- stock mutation is centralized in `StockMovementService`;
+- stock mutation and movement creation are transactional;
+- movement route is read-only;
+- a database trigger migration blocks update/delete on `inventory_movements`;
+- tenant/store isolation is checked in service queries.
+
+### API Routes
+
+Existing route groups:
+
+- `/api/health`
+- `/api/settings/overview`
+- `/api/warehouses`
+- `/api/warehouse-zones`
+- `/api/warehouse-locations`
+- `/api/products`
+- `/api/orders`
+- `/api/inventory/balances`
+- `/api/inventory/movements`
+- `/api/receiving/sessions`
+- `/api/put-away`
+- `/api/transfers`
+- `/api/adjustments`
+- `/api/cycle-counts`
+- `/api/warehouse-work`
+- `/api/barcode/resolve`
+- `/api/dashboard/wms`
+
+Shallow parts:
+
+- no user/admin CRUD API;
+- company/tenant creation and session-backed switching exist for owner/admin users.
+
+### UI Screens
+
+Existing screens:
+
+- `Обзор`
+- `Склады и ячейки`
+- `Остатки`
+- `Приёмка`
+- `Размещение`
+- `Перемещения`
+- `Сборка заказов`
+- `Инвентаризация`
+- `История движений`
+- `Настройки`
+
+Russian UX is present in navigation and most worker screens.
+
+Shallow parts:
+
+- settings are informative, not fully operational;
+- scanner flows are forms with scan fields, but not validated in a real browser test;
+- worker flows need more guardrails for partial/exception paths.
+
+### Tests
+
+Existing tests cover:
+
+- stock movement rules;
+- negative stock prevention;
+- stock mutation boundaries;
+- a Postgres-backed receive → put-away → transfer → adjustment → cycle count → pick smoke workflow;
+- permissions;
+- auth fallback policy;
+- barcode selection and normalization;
+- receiving rules;
+- adjustment rules;
+- cycle-count rules;
+- picking rules;
+- static scanner-flow contracts.
+
+Shallow parts:
+
+- no route handler tests;
+- no browser/mobile/scanner tests;
+- no true cross-tenant integration tests against Postgres;
+- no audit-log assertions for every business event.
+
+### Documentation
+
+Existing docs:
+
+- `docs/wms-production-blueprint.md`
+- `docs/wms-mvp-implementation.md`
+- this gap analysis
+
+Shallow parts:
+
+- no operator manual;
+- no deployment runbook beyond basics;
+- no backup/restore test procedure;
+- no incident/stock correction policy.
+
+### Russian UX Coverage
+
+Good coverage:
+
+- main navigation;
+- worker workflow labels;
+- common WMS statuses;
+- common errors;
+- empty states;
+- dashboard/settings copy.
+
+Gaps:
+
+- some internal enum-like statuses can still leak in edge cases;
+- API error mapping is message-string based;
+- validation errors are not structured with stable error codes;
+- audit log events are technical English strings.
+
+## 2. What Is Still Shallow Or Scaffold-Like
+
+### Warehouses
+
+Exists:
+
+- create/update/deactivate APIs and UI;
+- tenant-scoped uniqueness;
+- active/inactive state;
+- audit log writes.
+
+Gaps:
+
+- no capacity/metadata;
+- no warehouse-level default receiving/picking policies;
+- warehouse deactivation is guarded, but deactivation UX still needs clearer recovery steps.
+
+### Zones
+
+Exists:
+
+- additive zone model and CRUD through location screen.
+
+Gaps:
+
+- no zone type/purpose;
+- zone deactivation is guarded while active locations exist;
+- no user-friendly zone management screen separate from locations.
+
+### Locations
+
+Exists:
+
+- code/barcode/type/status/flags;
+- tenant-scoped barcode uniqueness;
+- scanner lookup.
+
+Gaps:
+
+- no label printing/export;
+- no location capacity;
+- location deactivation is guarded while stock or open work exists;
+- no structured barcode registry.
+
+### Products
+
+Exists:
+
+- product and variant models;
+- seeded demo product;
+- list API for workflows.
+
+Gaps:
+
+- no import flow;
+- no label/printing workflow;
+- product deactivation is guarded while stock or open work exists.
+
+### Barcodes
+
+Exists:
+
+- direct scan resolution from location code/barcode, product SKU/barcode, variant SKU/barcode, order number, and work.
+- scan normalization for whitespace/control characters.
+
+Gaps:
+
+- no barcode label registry;
+- no label printing;
+- no alias/multiple barcodes per item;
+- no scan history or ambiguity resolver UI.
+
+### Stock Balances
+
+Exists:
+
+- location-level balances;
+- physical and unavailable stock states;
+- available quantity calculation.
+
+Gaps:
+
+- reserved/picked stock states still need fuller operational flows;
+- no reconciliation report comparing ledger to balances;
+- `onHandQty` is intentionally not constrained while explicit admin negative correction remains allowed.
+
+### Movement Ledger
+
+Exists:
+
+- append-only API design;
+- database trigger blocks update/delete;
+- movement history UI.
+
+Gaps:
+
+- no signed before/after snapshot per movement;
+- idempotency exists for movement-only commands, not whole-command receiving/picking;
+- ledger-to-balance reconciliation UI/API exists, but no scheduled job/alert yet;
+- no user-friendly audit drilldown.
+
+### Receiving
+
+Exists:
+
+- session/line model;
+- receive into receiving location;
+- RECEIVE movement through stock service;
+- completion rules.
+
+Gaps:
+
+- receiving depends on existing products;
+- no supplier/purchase reference model;
+- no duplicate scan/idempotency protection;
+- no over/under receipt exception workflow beyond quantity validation;
+- no receiving labels.
+
+### Put-Away
+
+Exists:
+
+- move from receiving to storage/picking;
+- PUTAWAY movement through stock service.
+
+Gaps:
+
+- no generated put-away work lines;
+- no location suggestions;
+- no destination capacity;
+- no partial put-away task history beyond movements.
+
+### Transfers
+
+Exists:
+
+- source/product/destination/quantity flow;
+- stock service movement.
+
+Gaps:
+
+- no transfer session/header;
+- no multi-line transfers;
+- no transfer reason;
+- no pending/in-progress transfer state.
+
+### Adjustments
+
+Exists:
+
+- adjustment reasons;
+- manual correction note required;
+- admin-only explicit negative correction path.
+
+Gaps:
+
+- no approval workflow for high-risk corrections;
+- no attachment/evidence;
+- no reason configuration.
+
+### Cycle Counts
+
+Exists:
+
+- session and line models;
+- expected snapshot;
+- counted quantity;
+- submit and approve;
+- approval creates stock movement.
+
+Gaps:
+
+- no blind count option;
+- no count assignment;
+- no recount history;
+- no count for missing/unexpected item not already in balance snapshot.
+
+### Picking
+
+Exists:
+
+- work header and work lines;
+- create pick work from existing order;
+- scan location/product and confirm quantity;
+- partial pick review marker.
+
+Gaps:
+
+- no reservation/allocation;
+- order creation is single-line MVP only;
+- no line splitting across bins;
+- no short-pick resolution workflow;
+- no pack/ship handoff;
+- picked quantity semantics need future packing/shipping policy.
+
+### Dashboard
+
+Exists:
+
+- operational metrics and panels.
+
+Gaps:
+
+- no stale work alerts;
+- no stock accuracy trend;
+- no role-specific dashboard;
+- no drilldown from every card.
+
+### Settings
+
+Exists:
+
+- active organization/current user/permission/setup overview.
+- admin-only user list, add user, role change, and remove access.
+- simple work-template and location-rule forms for owner/admin warehouse setup.
+
+Gaps:
+
+- no self-service signup/invite flow;
+- no barcode label settings.
+- warehouse rules are MVP-level forms, not a full directive sequencing engine.
+
+### Permissions
+
+Exists:
+
+- role-to-WMS-permission map;
+- server-side checks.
+
+Gaps:
+
+- no customizable roles;
+- role assignment UI exists, but role-aware navigation is still missing;
+- no route-level permission test matrix;
+- no staff-safe filtering of navigation.
+
+### Auth, Users, Roles
+
+Exists:
+
+- email and password login;
+- password hashes using Node `scrypt` with per-password salts;
+- HTTP-only session cookie with server-side session records;
+- protected `/wms` routes and non-auth API routes;
+- organization/company context stored in the session;
+- logout;
+- seed admin login instructions;
+- guarded development fallback for explicit header/cookie context when `ALLOW_DEV_AUTH_FALLBACK=true`.
+
+Gaps:
+
+- no invite or password reset flow;
+- no rate limiting or account lockout;
+- no SSO/2FA;
+- no session rotation on organization switch;
+- no browser route matrix proving every API rejects unauthenticated requests.
+
+### Tenant/Company Isolation
+
+Exists:
+
+- `storeId` scope on most models;
+- access checks through request context and service queries.
+- current user can create and switch accessible organizations through a server-side session.
+
+Gaps:
+
+- no formal organization UI naming in schema;
+- no row-level database security;
+- no exhaustive route-level cross-tenant tests;
+- some child models rely on parent relation rather than direct `storeId`.
+
+### Error Handling
+
+Exists:
+
+- `AppError`;
+- Russian public message map.
+
+Gaps:
+
+- errors use English message keys;
+- no stable error codes;
+- no field-level validation response;
+- no structured client error display.
+
+### Validation
+
+Exists:
+
+- custom route parsing helpers;
+- service assertions.
+
+Gaps:
+
+- no schema validation library;
+- many forms only rely on basic required inputs;
+- no SKU/barcode formatting rules;
+- no idempotency validation.
+
+### Audit Trail
+
+Exists:
+
+- audit log writes for many mutations.
+
+Gaps:
+
+- audit actions are technical strings;
+- no before/after snapshots for high-risk changes;
+- not every route has test-backed audit assertions.
+
+### Mobile/Scanner UX
+
+Exists:
+
+- scanner components;
+- focused scan input;
+- Russian prompts.
+- accessible live notices;
+- mobile numeric quantity entry;
+- keyboard-scanner-friendly scan field attributes.
+
+Gaps:
+
+- no real mobile viewport visual tests;
+- no hardware scanner simulation beyond Enter-compatible forms;
+- some flows still expose dense tables on worker pages;
+- no sound/haptic feedback.
+
+### Production Deployment Readiness
+
+Exists:
+
+- Docker Postgres for local dev;
+- `/api/health`;
+- build passes.
+
+Gaps:
+
+- no production Dockerfile;
+- no backup/restore runbook validation;
+- no monitoring integration;
+- auth exists, but rate limiting, password reset, and account recovery are missing;
+- no dependency upgrade/security pass;
+- no migration deployment pipeline.
+
+## 3. Real WMS Business Scenario Check
+
+| Scenario | Current state | Gap |
+| --- | --- | --- |
+| Create company/tenant | Owner/admin can create and switch organizations through session-backed settings | Self-service signup remains missing |
+| Create warehouse | Works | Need deactivation safety checks |
+| Create zones and locations | Works | Need better zone UX and deactivate safeguards |
+| Configure work/routing rules | Simple work templates and location directives work from settings | Directed put-away suggestions still missing |
+| Create/import products | Manual create/update/deactivate now works | Bulk import still missing |
+| Assign product barcodes | Product and variant barcode CRUD works | Label printing and barcode registry still missing |
+| Receive goods into receiving area | Works with whole-command idempotency | Purchase-order import remains out of MVP |
+| Put away into storage location | Works | Needs task/history polish |
+| View stock by warehouse/location/product | Works | Needs filters and reconciliation |
+| Transfer stock between locations | Works | Needs reason/header for operational trace |
+| Replenish pick location | Basic min/max rule, generated work, and scanner confirmation work | No scheduled generation or priority queue |
+| Block damaged stock | Works through state-specific adjustment | Release/approval workflow still missing |
+| Adjust stock with reason and permission | Works for on-hand, damaged, and blocked states | High-risk approval workflow still missing |
+| Perform cycle count | Works for existing balances | Needs unexpected item and recount/reject |
+| Approve/reject count difference | Approve and reject/recount work | No multi-stage recount history |
+| Create order/pick task | Simple order creation and pick task creation work | Multi-line order editing still missing |
+| Pick correct item/location | Works | Needs browser/e2e coverage |
+| Prevent picking more than available | Works through stock service and DB smoke | Needs browser/e2e coverage |
+| Handle partial pick | Marker exists and pick confirmation is idempotent | Needs resolution workflow |
+| Pack picked order | Basic packing work, product verification, and shipping handoff work | No cartons, labels, or carrier integration |
+| Keep movement history append-only | App + DB trigger | Needs migration smoke and reconciliation |
+| Enforce user permissions | Server permissions and role assignment UI work | Needs route/browser permission matrix and role-aware nav |
+| Prevent cross-company access | Service-scoped and DB-smoke-tested across product, location, stock, and pick-work services | Route/browser matrix still missing |
+| Russian-friendly errors | Mostly | Needs error codes/coverage |
+| Mobile/scanner workflow | Basic | Needs real viewport/browser validation |
+
+## 4. Missing Production Requirements
+
+Auth:
+
+- invite flow, password reset, SSO/2FA;
+- rate limiting and account lockout;
+- route/browser unauthenticated-access matrix.
+
+Tenant isolation:
+
+- cross-tenant integration tests;
+- broader route-level tenant tests;
+- possible future DB row-level security.
+
+Roles/permissions:
+
+- basic user role management UI exists;
+- role-aware nav;
+- permission matrix tests.
+
+Stock transaction safety:
+
+- stronger DB constraints on balance fields;
+- idempotency keys for stock commands;
+- ledger-to-balance reconciliation exists as a manual report; scheduled checks are still missing.
+
+Negative stock prevention:
+
+- app rules exist;
+- DB-level checks and integration tests still needed.
+
+Database constraints:
+
+- append-only trigger exists;
+- non-negative constraints exist for reserved/picked/damaged/blocked stock buckets;
+- lifecycle/deactivation checks exist for warehouses, zones, locations, products, and variants; UI recovery guidance remains shallow.
+
+Idempotency:
+
+- implemented for movement-only put-away, transfer, and adjustment commands;
+- implemented as whole-command protection for receiving and picking, including workflow line state;
+- still missing for replenishment confirmation and future packing/shipping actions.
+
+Audit logs:
+
+- write path exists;
+- read UI and Russian business labels exist;
+- before/after snapshots and full route-backed audit assertions are still incomplete.
+
+Validation:
+
+- no schema validator;
+- no structured field errors;
+- no import validation.
+
+Loading/empty/error states:
+
+- basic states exist;
+- need route-specific recovery actions and worker-safe errors.
+
+Responsive/mobile scanner UI:
+
+- basic responsive layout exists;
+- no visual/e2e verification.
+
+Work templates/location directives:
+
+- simple templates and rules exist for default receiving location, preferred put-away zone, pick location, damaged location, and replenishment zones;
+- receiving can use the configured default receiving location;
+- pick work source selection honors configured pick-location priority;
+- still missing directed put-away suggestions in the worker UI and a full rule engine.
+
+Replenishment:
+
+- min/max rules exist for product stock in pick locations;
+- replenishment work can be generated from a source location or source zone;
+- scanner confirmation moves stock with a transactional `TRANSFER` movement through `StockMovementService`;
+- still missing scheduled generation, priority queues, source optimization, and exception-driven replenishment.
+
+Packing/shipping foundation:
+
+- picked orders can create packing work;
+- packing verifies product and quantity without changing stock;
+- packed orders can be marked `Передан в отгрузку`;
+- still missing carton contents, shipping labels, carrier integration, and packing idempotency.
+
+Russian copy consistency:
+
+- strong baseline;
+- technical audit/event/status strings still need cleanup.
+
+Data seeding/demo data:
+
+- minimal seed exists;
+- needs realistic end-to-end demo data and reset instructions.
+
+End-to-end tests:
+
+- DB-backed service workflow smoke exists;
+- route/browser workflow tests are still missing.
+
+Deployment config:
+
+- local Docker DB exists;
+- app production Docker/deploy config missing.
+
+Backup/restore:
+
+- documented as a need;
+- not tested.
+
+Observability/logging:
+
+- console error only;
+- no structured logs, metrics, or alerting.
+
+## 5. Prioritized Hardening Roadmap
+
+The phases below are intentionally small. Split any phase further if implementation risk increases.
+
+### Phase 1: Product And Barcode CRUD
+
+- Goal: make receiving/picking possible without seed-only products.
+- Business reason: warehouse users cannot receive real goods if products and barcodes cannot be created.
+- Technical tasks: add product/variant create/update/deactivate services, API routes, Russian product page, barcode duplicate handling, audit logs.
+- Files/modules: `productService`, `/api/products`, `/api/products/[id]`, `/wms/products`, nav text, tests.
+- Validation: prisma generate if needed, typecheck, lint, tests, build.
+- Self-review: tenant-scoped, permission-gated, Russian UI, no duplicate barcode ambiguity.
+- Continue when: user can create product and barcode from UI.
+
+### Phase 2: Order Creation For Picking
+
+- Goal: remove seed dependency from picking.
+- Business reason: picking is not useful unless users can create a simple order/task source.
+- Technical tasks: add simple order create API/UI in picking flow, product line selection, quantity validation.
+- Files/modules: `orderService`, `/api/orders`, `/wms/picking`.
+- Validation: typecheck, lint, tests, build.
+- Self-review: order is tenant-scoped, product belongs to tenant, quantities positive.
+- Continue when: user can create order and then pick it.
+
+### Phase 3: Cycle Count Reject/Recount
+
+- Goal: support approve/reject difference workflow.
+- Business reason: managers must be able to reject bad counts without changing stock.
+- Technical tasks: add reject/reopen route, service method, UI action, audit log, tests.
+- Files/modules: `cycleCountService`, `/api/cycle-counts/[id]/reject`, `/wms/cycle-counts`.
+- Validation: typecheck, lint, tests, build.
+- Self-review: reject does not mutate stock and only works before approval.
+- Continue when: pending count can return to counting.
+
+### Phase 4: State-Specific Adjustments
+
+- Goal: support damaged/blocked stock as real stock states.
+- Business reason: damaged stock should be unavailable without disappearing from physical count.
+- Technical tasks: add adjustment target state, update stock engine/service, UI reason mapping, tests.
+- Files/modules: adjustment service/rules/UI, stock engine.
+- Validation: typecheck, lint, tests, build.
+- Self-review: damaged/blocked stock remains physical but unavailable.
+- Continue when: user can block damaged stock safely.
+
+### Phase 5: DB Non-Negative Balance Constraints
+
+- Goal: protect stock state at database level.
+- Business reason: application bugs should not create impossible balances.
+- Technical tasks: additive check constraints for non-negative stock fields and availability where possible.
+- Files/modules: migration, stock tests/docs.
+- Validation: prisma generate, migration smoke if DB available, typecheck, tests, build.
+- Self-review: no destructive migration, admin negative correction behavior reviewed.
+- Continue when: constraints match app rules.
+
+### Phase 6: Database-Backed Workflow Integration Tests
+
+- Goal: prove real receive → put-away → transfer → count → pick flow.
+- Business reason: isolated rule tests do not prove workflow correctness.
+- Technical tasks: add test DB setup or transactional integration tests using Prisma.
+- Files/modules: test helpers, service integration tests.
+- Validation: tests with local DB, typecheck, lint, build.
+- Self-review: tests isolate tenant data and prove balances/movements.
+- Continue when: critical workflow passes against Postgres.
+
+### Phase 7: Cross-Tenant Route/Service Tests
+
+- Goal: prove company isolation.
+- Business reason: multi-tenant data leakage is production-critical.
+- Technical tasks: create two tenants in tests and verify reads/mutations are blocked.
+- Files/modules: service tests, maybe route tests.
+- Validation: tests, typecheck, lint, build.
+- Self-review: no API returns other tenant data.
+- Continue when: cross-tenant tests cover products, locations, stock, work.
+
+### Phase 8: Audit Log Read UI
+
+- Goal: make audit trail usable.
+- Business reason: managers need to understand who changed stock/configuration.
+- Technical tasks: audit list API/UI, Russian business labels, filters.
+- Files/modules: audit service/API/page/settings link.
+- Validation: typecheck, lint, tests, build.
+- Self-review: audit is tenant-scoped and readable.
+- Continue when: user can inspect audit events.
+
+### Phase 9: Worker Flow Mobile QA
+
+- Goal: verify scanner flows on mobile layouts.
+- Business reason: warehouse workers often use handheld/mobile devices.
+- Technical tasks: add browser testing stack if approved/available, or scripted visual smoke with existing tooling.
+- Files/modules: test config, scanner flow tests.
+- Validation: e2e/visual tests, typecheck, lint, build.
+- Self-review: no overlapping controls, scan input focus works.
+- Continue when: mobile scanner path is verified.
+
+### Phase 10: Production Auth And Session Default
+
+- Goal: replace demo/local auth with a production-oriented default.
+- Business reason: production WMS cannot rely on headers/fallback context.
+- Technical tasks: email/password login, secure password hashing, server-side sessions, HTTP-only cookies, logout, route/API protection, role mapping, seed admin instructions.
+- Files/modules: auth, middleware, user services/UI.
+- Validation: prisma generate, migrate, seed, typecheck, lint, auth tests, DB smoke, build.
+- Self-review: no normal production route can be used without a session.
+- Continue when: login/logout works and dev fallback is explicit.
+
+### Phase 11: Company/Tenant Admin Flow
+
+- Goal: allow creating and switching organizations safely.
+- Business reason: standalone product needs tenant lifecycle management.
+- Technical tasks: company create/update/switcher, current user membership, admin-only controls.
+- Files/modules: store/organization service/API/UI.
+- Validation: typecheck, lint, tests, build.
+- Self-review: no accidental cross-tenant access.
+- Continue when: admin can manage organization context.
+
+### Phase 12: Idempotency For Stock Commands
+
+- Goal: prevent duplicate scanner submissions.
+- Business reason: warehouse scanners can submit twice.
+- Technical tasks: command idempotency key model, service checks, UI request keys.
+- Files/modules: schema, stock service, receiving/picking/transfer routes.
+- Validation: prisma generate, tests, build.
+- Self-review: duplicate commands do not duplicate stock movement.
+- Continue when: receive/pick/transfer duplicate tests pass.
+
+### Phase 13: Reconciliation Report
+
+- Goal: prove balances match movement ledger.
+- Business reason: stock accuracy requires auditability.
+- Technical tasks: report service compares summed movements to balances, UI panel.
+- Files/modules: dashboard/report service/UI/tests.
+- Validation: typecheck, lint, tests, build.
+- Self-review: discrepancies are clear and tenant-scoped.
+- Continue when: dashboard can flag ledger/balance mismatch.
+
+### Phase 14: Import Products
+
+- Goal: practical bulk setup.
+- Business reason: real warehouses do not create every SKU manually.
+- Technical tasks: CSV import preview/validate/apply, duplicate handling.
+- Files/modules: product import service/API/UI.
+- Validation: tests, typecheck, lint, build.
+- Self-review: no partial bad imports without user confirmation.
+- Continue when: CSV import works safely.
+
+### Phase 15: Deployment Runbook And Backup Smoke
+
+- Goal: make deployment operationally credible.
+- Business reason: production WMS needs recoverability.
+- Technical tasks: Dockerfile/deploy notes, backup/restore commands, health/dependency checklist.
+- Files/modules: docs/config.
+- Validation: build, health check, docs review.
+- Self-review: operator can deploy and recover a local DB.
+- Continue when: runbook is actionable.
+
+## Phase Progress
+
+#### Phase 1: Product And Barcode CRUD
+
+- Status: hardened, but bulk import remains future work.
+- What changed: added product/variant create, update, deactivate APIs; added Russian `Товары` page; added scanner-safe SKU/barcode uniqueness checks across products and variants; added product rule tests and audit writes.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` passed.
+- UX review: product setup is now Russian-first and usable from the WMS nav.
+- Architecture review: product mutations are tenant-scoped, permission-gated with `WMS_MANAGE_PRODUCTS`, and do not mutate stock.
+- Remaining risk: product import is still missing; product deactivation does not yet check active balances or open work.
+
+#### Phase 2: Order Creation For Picking
+
+- Status: hardened for single-line MVP orders.
+- What changed: added simple customer order creation API and Russian order form inside `Сборка заказов`; added order number/quantity validation and audit writes.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` passed.
+- UX review: workers/managers can create a basic order in the picking screen without relying on seed data.
+- Architecture review: order creation is tenant-scoped, permission-gated with `WMS_PICK`, validates product/variant ownership, and does not mutate stock.
+- Remaining risk: only one line can be created at a time; no full order editing/cancel UI; no reservation/allocation yet.
+
+#### Phase 3: Cycle Count Reject/Recount
+
+- Status: hardened for MVP approval/rejection.
+- What changed: added reject/recount rule, service method, API route, UI action, audit write, and tests.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` passed.
+- UX review: managers can now return a pending count to counting with Russian confirmation copy instead of being forced to approve.
+- Architecture review: rejection is permission-gated with `WMS_APPROVE_CYCLE_COUNT`, tenant-scoped, and does not create stock movements.
+- Remaining risk: no full recount history or reject reason field yet.
+
+#### Phase 4: State-Specific Adjustments
+
+- Status: hardened for damaged/blocked MVP use.
+- What changed: adjustment flow can now change factual on-hand stock, damaged unavailable stock, or blocked unavailable stock; stock state changes still route through `StockMovementService`.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` passed.
+- UX review: the adjustment screen now asks `Что изменить` in Russian and distinguishes factual stock from damaged/blocked stock.
+- Architecture review: damaged/blocked adjustments are transactional, tenant-scoped, permission-gated, ledger-backed, and do not bypass the central stock service.
+- Remaining risk: no manager approval flow for high-risk corrections; damaged/blocked release is represented as a negative state adjustment, which is safe but not yet a dedicated workflow.
+
+#### Phase 5: DB Non-Negative Balance Constraints
+
+- Status: partially hardened.
+- What changed: added database check constraints for `reservedQty`, `pickedQty`, `damagedQty`, and `blockedQty` so unavailable stock buckets cannot go negative.
+- Validation: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` passed.
+- UX review: no UI change.
+- Architecture review: constraints are additive and do not conflict with the explicit admin negative on-hand correction policy.
+- Remaining risk: `onHandQty` is intentionally not constrained because the current business rule allows explicit admin negative correction; a future product decision should decide whether that policy remains acceptable.
+
+#### Phase 6: Database-Backed Workflow Integration Tests
+
+- Status: hardened for the critical MVP service workflow.
+- What changed: added `pnpm test:db` and `scripts/wms-workflow-smoke.ts`, which creates an isolated tenant and validates receive, put-away, transfer, damaged-stock adjustment, cycle-count correction, order creation, pick work creation, picking, balance state, available quantity, and movement ledger sequence against Postgres.
+- Validation: `pnpm prisma:generate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed. `pnpm test:db` needs local Docker/Postgres and, in the Codex sandbox, elevated execution because `tsx` creates a local IPC pipe and Prisma connects to Docker.
+- UX review: no UI change.
+- Architecture review: the smoke proves all stock-changing workflow steps use service-layer transactions and append movements while preserving tenant isolation for the generated tenant.
+- Remaining risk: this is a service-level smoke, not browser/route/e2e coverage; expanded cross-tenant and UI scanner tests are still needed.
+
+#### Phase 7: Cross-Tenant Service Smoke
+
+- Status: partially hardened.
+- What changed: extended the DB workflow smoke to create a second tenant and assert that cross-tenant product updates, product reads, location creation, stock movement, and pick-work creation are blocked.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: no UI change.
+- Architecture review: service-level tenant isolation now has a real Postgres smoke covering configuration, product, stock, and work boundaries.
+- Remaining risk: route-handler and browser-level cross-tenant tests are still missing; child-table isolation should continue to be expanded as new flows are added.
+
+#### Phase 8: Audit Log Read UI
+
+- Status: hardened for MVP visibility.
+- What changed: added `WMS_VIEW_AUDIT`, audit-log list service, `/api/audit-logs`, Russian `Журнал действий` page, Russian action/entity labels, and DB smoke assertions that audit rows are tenant-scoped.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: managers/admins can now inspect key stock/configuration events in Russian without reading raw action names.
+- Architecture review: audit reads are permission-gated and tenant-scoped; audit writes remain transactional where they are part of stock/configuration mutations.
+- Remaining risk: audit metadata still lacks normalized before/after summaries for every high-risk event, and there are no route-handler tests for audit access yet.
+
+#### Phase 9: Mobile Scanner Component Hardening
+
+- Status: partially hardened.
+- What changed: improved reusable scanner inputs with explicit labels, screen-reader scan instructions, autocorrect disabled, Enter-key hints, accessible live notices, mobile numeric quantity entry, and more stable worker task cards; expanded scanner contract tests.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: worker flows remain Russian-first and are more keyboard-scanner/mobile friendly without changing the underlying workflows.
+- Architecture review: no stock behavior changed; DB workflow smoke still passes.
+- Remaining risk: this is still static/component-level coverage. Real browser/mobile viewport testing remains missing because no e2e/browser test stack is installed in this repo yet.
+
+#### Phase 10: Deactivation Safety Guards
+
+- Status: hardened for core setup entities.
+- What changed: warehouse deactivation now blocks active locations, stock, receiving sessions, work, and open cycle counts; zone deactivation blocks active locations; location deactivation blocks stock, receiving, work, and open counts; product and variant deactivation block active stock, receiving lines, work lines, count lines, and open orders.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: API errors are mapped to Russian messages that explain why an entity cannot be made unavailable.
+- Architecture review: safeguards are service-layer checks inside the same mutation transactions before status/active changes; stock rules remain centralized.
+- Remaining risk: UI currently shows the error but does not yet guide the user to close specific blocking work/stock rows.
+
+#### Phase 11: Local User Administration
+
+- Status: hardened for local standalone administration.
+- What changed: added `WMS_MANAGE_USERS`, admin-only user membership service, `/api/users`, `/api/users/[id]`, Russian user management inside settings, audit labels for user actions, and DB smoke coverage for add/update/remove plus manager denial.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: admins can add users, change roles, and remove access from the Russian settings screen; last admin removal is blocked with a Russian error.
+- Architecture review: user management is tenant-scoped, permission-gated, and audit-logged. It does not add a fake production auth provider.
+- Remaining risk: authentication is still local/demo-header based; production login/session provider remains a product/ops decision.
+
+#### Phase 12: Local Organization Context
+
+- Status: hardened for local standalone tenant operations.
+- What changed: request context now supports secure local cookies in addition to explicit headers; added organization list/create services, `/api/organizations`, `/api/context`, Russian organization create/switch UI in settings, audit labels, and DB smoke assertions for organization creation.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: admins can create another organization and switch the current organization from the Russian settings screen without editing request headers.
+- Architecture review: organization creation is permission-gated, tenant membership is checked before switching, and the local context remains explicit. This is not presented as production authentication.
+- Remaining risk: production-grade signup/login/session management is still missing and requires a product/security decision.
+
+#### Phase 13: Stock Command Idempotency Foundation
+
+- Status: partially hardened.
+- What changed: added additive `stock_commands` table, central `StockMovementService` idempotency support with fingerprints, optional `idempotencyKey` support for put-away, transfer, and adjustment APIs, UI-generated idempotency keys for those workflows, and DB smoke assertions that duplicate transfers do not duplicate stock movements while key reuse with different payload is rejected.
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: duplicate scanner submission protection is invisible when it works; conflicting resubmissions get Russian recovery text.
+- Architecture review: the new table is additive, stock mutation remains centralized, movement history remains append-only, and idempotency checks run inside stock transactions.
+- Remaining risk: receiving and picking still need whole-command idempotency because they update receiving/work line state in addition to stock movement; adding only movement idempotency there would be misleading and potentially unsafe for partial operations.
+
+#### Phase 14: Ledger-To-Balance Reconciliation
+
+- Status: hardened for manual verification.
+- What changed: added additive movement delta columns, populated signed stock-state deltas from `StockMovementService`, added reconciliation service/API/page, navigation entry `Проверка остатков`, and DB smoke assertions that the full workflow reconciles without discrepancies.
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: managers can manually check whether balances match movement history from a Russian page with clear discrepancy rows.
+- Architecture review: reconciliation is based on ledger deltas written transactionally with the movement row; no stock mutation bypasses were introduced.
+- Remaining risk: historical movements created before delta columns cannot be fully reconciled without a backfill policy; there is no scheduled reconciliation job or alerting yet.
+
+#### Phase 15: Reference Alignment
+
+- Status: documented as the production benchmark.
+- What changed: added `docs/wms-reference-alignment.md` comparing the standalone WMS against Dynamics 365 Warehouse Management, Oracle WMS Cloud, NetSuite WMS, Odoo Inventory/Barcode, and SAP EWM-style concepts.
+- Validation: documentation-only phase; implementation validation is covered by the following auth phase.
+- UX review: reference gaps are translated into simple Russian worker/admin concepts instead of exposing enterprise terminology.
+- Architecture review: the next roadmap focuses on work templates/location directives, replenishment, idempotency, packing/shipping foundation, product import, label registry, production readiness, and UX hardening.
+- Remaining risk: reference alignment is a design benchmark, not proof that the missing concepts are implemented.
+
+#### Phase 16: Email/Password Auth And Sessions
+
+- Status: hardened for a standalone MVP default, not complete for public SaaS security.
+- What changed: added `User.passwordHash`, `UserSession`, email/password login, salted `scrypt` password hashing, secure HTTP-only session cookies, logout, protected WMS/API middleware, session-backed organization context switching, Russian login/access errors, seed admin password instructions, and new production roles (`OWNER`, `WAREHOUSE_MANAGER`, `WAREHOUSE_WORKER`, `VIEWER`).
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate`, `pnpm prisma:seed`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: login and settings are Russian-first; normal users see simple roles like `Владелец`, `Руководитель склада`, `Сотрудник склада`, and `Наблюдатель`.
+- Architecture review: route/API access now requires a server-side session unless explicit dev fallback is enabled; tenant context is loaded from the session and membership; permissions remain server-side.
+- Remaining risk: no password reset, invite email, rate limiting, account lockout, 2FA, or browser-level route protection matrix yet.
+
+#### Phase 17: Simple Work Templates And Location Directives
+
+- Status: implemented at MVP level.
+- What changed: added `WarehouseWorkTemplate` and `WarehouseLocationDirective` tables, service/API, Russian settings UI, seed defaults, audit labels, DB smoke coverage, default receiving location lookup, and pick-location priority for pick work creation.
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate` applied the additive migration and then prompted for an extra dev migration; the prompt was killed and `pnpm exec prisma migrate status` confirmed the database is up to date. `pnpm prisma:seed`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: admins configure rules with Russian labels like `Ячейка приёмки по умолчанию` and `Приоритетная ячейка сборки`; worker screens remain simple and do not expose enterprise rule terminology.
+- Architecture review: directives are tenant-scoped, permission-gated, additive, and audited; receiving and picking consult rules without bypassing stock services or changing stock directly.
+- Remaining risk: this is not a full location-directive engine; put-away suggestions, replenishment generation, and rule conflict diagnostics remain future hardening.
+
+#### Phase 18: MVP Replenishment
+
+- Status: implemented at MVP level.
+- What changed: added `ReplenishmentRule`, `REPLENISHMENT` work type, `completedQuantity` on work lines, `/api/replenishment`, Russian `Пополнение` page, min/max rule creation, generated replenishment work, scanner confirmation, and DB smoke coverage.
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate` applied the additive migration and then prompted for an extra dev migration; the prompt was killed and `pnpm exec prisma migrate status` confirmed the database is up to date. `pnpm prisma:seed`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: the UI is Russian-first and asks for warehouse, product, pick location, source, min/max, then scan source, destination, product, and quantity.
+- Architecture review: stock changes are still transactional and use `StockMovementService` with a `TRANSFER` movement; replenishment rules/work are tenant-scoped and permission-gated.
+- Remaining risk: no scheduled generation, priority queue, source optimization, route/browser tests, or replenishment exception workflow yet.
+
+#### Phase 19: Whole-Command Idempotency For Receiving And Picking
+
+- Status: hardened for the two highest-risk scanner submit flows.
+- What changed: added workflow idempotency helper using `stock_commands`, added idempotency keys to receiving and picking services/routes/UI, and expanded DB smoke to prove duplicate receive/pick submissions do not duplicate movement or workflow-line updates while conflicting key reuse is rejected.
+- Validation: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: duplicate-submit protection is invisible when it works; scanner pages still show simple Russian success/error messages.
+- Architecture review: idempotency is claimed inside the same database transaction before workflow state changes; stock still changes only through `StockMovementService`.
+- Remaining risk: replenishment confirmation and future packing/shipping commands still need the same whole-command protection.
+
+#### Phase 20: Packing And Shipping Handoff Foundation
+
+- Status: implemented at MVP foundation level.
+- What changed: added `PACK` work type, `PACKING`, `PACKED`, and `READY_TO_SHIP` order statuses, packing service/API, Russian `Упаковка` page, product/quantity verification, ready-to-ship handoff, audit labels, and DB smoke coverage.
+- Validation: `pnpm prisma:generate`, `pnpm prisma:migrate` applied the additive enum migration and then prompted for an extra dev migration; the prompt was killed and `pnpm exec prisma migrate status` confirmed the database is up to date. `pnpm prisma:seed`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: packing asks workers to verify products and quantities in Russian and exposes a simple `Передать в отгрузку` action.
+- Architecture review: packing does not mutate stock; it creates warehouse work and changes order/work statuses transactionally with audit logs.
+- Remaining risk: no carton records, package contents, shipping labels, carrier integration, packing idempotency, or browser/e2e tests yet.

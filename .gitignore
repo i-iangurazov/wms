@@ -1,0 +1,22 @@
+# dependencies
+node_modules
+
+# build output
+.next
+out
+dist
+coverage
+
+# local environment and secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# logs and OS/editor noise
+*.log
+.DS_Store
+
+# TypeScript / Next.js
+*.tsbuildinfo

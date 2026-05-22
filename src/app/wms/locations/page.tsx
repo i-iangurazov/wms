@@ -1,0 +1,471 @@
+"use client";
+
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { EmptyState } from "@/components/EmptyState";
+import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { PageHeader } from "@/components/PageHeader";
+import { StatusBadge } from "@/components/StatusBadge";
+import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
+
+type Warehouse = {
+  id: string;
+  code: string;
+  name: string;
+  status: "ACTIVE" | "INACTIVE";
+};
+
+type Zone = {
+  id: string;
+  warehouseId: string;
+  code: string;
+  name: string;
+  status: "ACTIVE" | "INACTIVE";
+  warehouse: Warehouse;
+  _count?: { locations: number };
+};
+
+type LocationType =
+  | "RECEIVING"
+  | "STORAGE"
+  | "PICKING"
+  | "PACKING"
+  | "SHIPPING"
+  | "RETURNS"
+  | "DAMAGED";
+
+type Location = {
+  id: string;
+  warehouseId: string;
+  zoneId: string | null;
+  code: string;
+  barcode: string | null;
+  type: LocationType;
+  status: "ACTIVE" | "INACTIVE";
+  isPickable: boolean;
+  isReceivable: boolean;
+  isSellable: boolean;
+  warehouse: Warehouse;
+  zone: Zone | null;
+};
+
+type FormState = {
+  warehouseId: string;
+  zoneId: string;
+  code: string;
+  barcode: string;
+  type: LocationType;
+  status: "ACTIVE" | "INACTIVE";
+  isPickable: boolean;
+  isReceivable: boolean;
+  isSellable: boolean;
+};
+
+const locationTypes: LocationType[] = [
+  "RECEIVING",
+  "STORAGE",
+  "PICKING",
+  "PACKING",
+  "SHIPPING",
+  "RETURNS",
+  "DAMAGED"
+];
+
+const emptyForm: FormState = {
+  warehouseId: "",
+  zoneId: "",
+  code: "",
+  barcode: "",
+  type: "STORAGE",
+  status: "ACTIVE",
+  isPickable: false,
+  isReceivable: false,
+  isSellable: false
+};
+
+function defaultsForType(type: LocationType) {
+  return {
+    isPickable: type === "PICKING",
+    isReceivable: type === "RECEIVING" || type === "RETURNS",
+    isSellable: type === "PICKING"
+  };
+}
+
+export default function LocationsPage() {
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [zoneForm, setZoneForm] = useState({ warehouseId: "", code: "", name: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const editing = useMemo(
+    () => locations.find((location) => location.id === editingId),
+    [editingId, locations]
+  );
+  const activeZonesForForm = zones.filter(
+    (zone) => zone.status === "ACTIVE" && zone.warehouseId === form.warehouseId
+  );
+
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    const [warehouseResponse, zoneResponse, locationResponse] = await Promise.all([
+      fetch("/api/warehouses", { cache: "no-store" }),
+      fetch("/api/warehouse-zones", { cache: "no-store" }),
+      fetch("/api/warehouse-locations", { cache: "no-store" })
+    ]);
+    const warehousePayload = (await warehouseResponse.json()) as {
+      warehouses?: Warehouse[];
+      error?: string;
+    };
+    const locationPayload = (await locationResponse.json()) as {
+      locations?: Location[];
+      error?: string;
+    };
+    const zonePayload = (await zoneResponse.json()) as {
+      zones?: Zone[];
+      error?: string;
+    };
+    if (!warehouseResponse.ok || !zoneResponse.ok || !locationResponse.ok) {
+      setError(warehousePayload.error ?? zonePayload.error ?? locationPayload.error ?? "Не удалось загрузить ячейки.");
+    } else {
+      const nextWarehouses = warehousePayload.warehouses ?? [];
+      setWarehouses(nextWarehouses);
+      setZones(zonePayload.zones ?? []);
+      setLocations(locationPayload.locations ?? []);
+      setForm((current) => ({
+        ...current,
+        warehouseId: current.warehouseId || nextWarehouses[0]?.id || ""
+      }));
+      setZoneForm((current) => ({
+        ...current,
+        warehouseId: current.warehouseId || nextWarehouses[0]?.id || ""
+      }));
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    void loadData();
+  }, []);
+
+  function setType(type: LocationType) {
+    setForm((current) => ({ ...current, type, ...defaultsForType(type) }));
+  }
+
+  function startEdit(location: Location) {
+    setEditingId(location.id);
+    setForm({
+      warehouseId: location.warehouseId,
+      zoneId: location.zoneId ?? "",
+      code: location.code,
+      barcode: location.barcode ?? "",
+      type: location.type,
+      status: location.status,
+      isPickable: location.isPickable,
+      isReceivable: location.isReceivable,
+      isSellable: location.isSellable
+    });
+  }
+
+  function resetForm() {
+    setEditingId(null);
+    setForm({ ...emptyForm, warehouseId: warehouses[0]?.id ?? "", zoneId: "" });
+  }
+
+  async function createZone(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    const response = await fetch("/api/warehouse-zones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(zoneForm)
+    });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось создать зону.");
+      return;
+    }
+    setZoneForm({ warehouseId: zoneForm.warehouseId, code: "", name: "" });
+    await loadData();
+  }
+
+  async function deactivateZone(id: string) {
+    setError(null);
+    const response = await fetch(`/api/warehouse-zones/${id}`, { method: "DELETE" });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось сделать зону недоступной.");
+      return;
+    }
+    await loadData();
+  }
+
+  async function saveLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    const response = await fetch(
+      editingId ? `/api/warehouse-locations/${editingId}` : "/api/warehouse-locations",
+      {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, barcode: form.barcode || undefined, zoneId: form.zoneId || null })
+      }
+    );
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось сохранить ячейку.");
+    } else {
+      resetForm();
+      await loadData();
+    }
+    setSaving(false);
+  }
+
+  async function deactivateLocation(id: string) {
+    setError(null);
+    const response = await fetch(`/api/warehouse-locations/${id}`, { method: "DELETE" });
+    const payload = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      setError(payload.error ?? "Не удалось сделать ячейку недоступной.");
+    } else {
+      await loadData();
+    }
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Склады и ячейки"
+        description="Настройте склады, зоны, ячейки, штрихкоды и назначение каждой ячейки."
+      />
+
+      <section className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <div className="mb-4 flex flex-col gap-1">
+          <h2 className="text-base font-semibold">Зоны</h2>
+          <p className="text-sm text-muted">Зона помогает сгруппировать ячейки внутри склада. Можно оставить без зоны.</p>
+        </div>
+        <form onSubmit={createZone} className="grid gap-4 md:grid-cols-4">
+          <Field label={commonText.warehouse}>
+            <select
+              className={inputClass}
+              value={zoneForm.warehouseId}
+              onChange={(event) => setZoneForm((current) => ({ ...current, warehouseId: event.target.value }))}
+              required
+            >
+              <option value="">Выберите склад</option>
+              {warehouses.map((warehouse) => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.code} - {warehouse.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={commonText.code}>
+            <input
+              className={inputClass}
+              value={zoneForm.code}
+              onChange={(event) => setZoneForm((current) => ({ ...current, code: event.target.value }))}
+              placeholder="A"
+              required
+            />
+          </Field>
+          <Field label={commonText.name}>
+            <input
+              className={inputClass}
+              value={zoneForm.name}
+              onChange={(event) => setZoneForm((current) => ({ ...current, name: event.target.value }))}
+              placeholder="Основная зона"
+              required
+            />
+          </Field>
+          <div className="flex items-end">
+            <button className={buttonClass} disabled={!zoneForm.warehouseId} type="submit">
+              Создать зону
+            </button>
+          </div>
+        </form>
+        {zones.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {zones.map((zone) => (
+              <button
+                key={zone.id}
+                className="rounded-md border border-border bg-surface px-3 py-2 text-left text-sm disabled:opacity-60"
+                disabled={zone.status === "INACTIVE"}
+                type="button"
+                onClick={() => void deactivateZone(zone.id)}
+                title="Нажмите, чтобы сделать зону недоступной"
+              >
+                <span className="font-semibold">{zone.code}</span> · {zone.name}
+                <span className="ml-2 text-xs text-muted">{zone._count?.locations ?? 0} ячеек</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
+      <form onSubmit={saveLocation} className="mb-6 rounded-lg border border-border bg-panel p-4 shadow-sm">
+        <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          <Field label={commonText.warehouse}>
+            <select
+              className={inputClass}
+              value={form.warehouseId}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, warehouseId: event.target.value, zoneId: "" }))
+              }
+              required
+              disabled={Boolean(editing)}
+            >
+              <option value="">Выберите склад</option>
+              {warehouses.map((warehouse) => (
+                <option key={warehouse.id} value={warehouse.id}>
+                  {warehouse.code} - {warehouse.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Зона">
+            <select
+              className={inputClass}
+              value={form.zoneId}
+              onChange={(event) => setForm((current) => ({ ...current, zoneId: event.target.value }))}
+              disabled={!form.warehouseId}
+            >
+              <option value="">Без зоны</option>
+              {activeZonesForForm.map((zone) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.code} - {zone.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={commonText.code}>
+            <input
+              className={inputClass}
+              value={form.code}
+              onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))}
+              placeholder="A-01-01"
+              required
+            />
+          </Field>
+          <Field label={commonText.barcode}>
+            <input
+              className={inputClass}
+              value={form.barcode}
+              onChange={(event) => setForm((current) => ({ ...current, barcode: event.target.value }))}
+              placeholder="LOC-A-01-01"
+            />
+          </Field>
+          <Field label={commonText.type}>
+            <select className={inputClass} value={form.type} onChange={(event) => setType(event.target.value as LocationType)}>
+              {locationTypes.map((type) => (
+                <option key={type} value={type}>
+                  {labelFor(locationTypeLabels, type)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={commonText.status}>
+            <select
+              className={inputClass}
+              value={form.status}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, status: event.target.value as FormState["status"] }))
+              }
+            >
+              <option value="ACTIVE">Активно</option>
+              <option value="INACTIVE">Недоступно</option>
+            </select>
+          </Field>
+          <div className="flex items-end gap-2">
+            <button className={buttonClass} disabled={saving || !form.warehouseId} type="submit">
+              {editing ? commonText.update : commonText.create}
+            </button>
+            {editing ? (
+              <button className={secondaryButtonClass} type="button" onClick={resetForm}>
+                {commonText.cancel}
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+          {(["isPickable", "isReceivable", "isSellable"] as const).map((key) => (
+            <label key={key} className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={form[key]}
+                onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.checked }))}
+              />
+              {key === "isPickable" ? "Для сборки" : key === "isReceivable" ? "Для приёмки" : "Для продажи"}
+            </label>
+          ))}
+        </div>
+      </form>
+
+      {error ? <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-danger">{error}</div> : null}
+      {loading ? <div className="text-sm text-muted">Загрузка ячеек...</div> : null}
+      {!loading && locations.length === 0 ? (
+        <EmptyState title={emptyStates.locationsTitle} body={emptyStates.locationsBody} />
+      ) : null}
+
+      {locations.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-border bg-panel shadow-sm">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead className="bg-surface text-xs uppercase text-muted">
+              <tr>
+                <th className="px-4 py-3">{commonText.warehouse}</th>
+                <th className="px-4 py-3">Зона</th>
+                <th className="px-4 py-3">{commonText.code}</th>
+                <th className="px-4 py-3">{commonText.barcode}</th>
+                <th className="px-4 py-3">{commonText.type}</th>
+                <th className="px-4 py-3">Назначение</th>
+                <th className="px-4 py-3">{commonText.status}</th>
+                <th className="px-4 py-3 text-right">{commonText.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {locations.map((location) => (
+                <tr key={location.id} className="border-t border-border">
+                  <td className="px-4 py-3">{location.warehouse.code}</td>
+                  <td className="px-4 py-3">{location.zone ? `${location.zone.code} · ${location.zone.name}` : "Без зоны"}</td>
+                  <td className="px-4 py-3 font-medium">{location.code}</td>
+                  <td className="px-4 py-3">{location.barcode ?? "-"}</td>
+                  <td className="px-4 py-3">{labelFor(locationTypeLabels, location.type)}</td>
+                  <td className="px-4 py-3 text-xs text-muted">
+                    {[
+                      location.isPickable ? "Сборка" : null,
+                      location.isReceivable ? "Приёмка" : null,
+                      location.isSellable ? "Продажа" : null
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || commonText.none}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge value={location.status} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button className="mr-3 text-accent" type="button" onClick={() => startEdit(location)}>
+                      {commonText.edit}
+                    </button>
+                    <button
+                      className="text-danger disabled:text-muted"
+                      disabled={location.status === "INACTIVE"}
+                      type="button"
+                      onClick={() => void deactivateLocation(location.id)}
+                    >
+                      {commonText.deactivate}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </div>
+  );
+}
