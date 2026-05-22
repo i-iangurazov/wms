@@ -28,18 +28,18 @@ export function ScannerInput({
   }
 
   return (
-    <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-3">
-      <label className="mb-1 block text-sm font-medium">{label}</label>
-      <div className="flex gap-2">
+    <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-4">
+      <label className="mb-2 block text-sm font-semibold text-ink">{label}</label>
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           ref={inputRef}
-          className={inputClass}
+          className={`${inputClass} h-12 text-base`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={placeholder}
           autoComplete="off"
         />
-        <button className={buttonClass} type="submit">
+        <button className={`${buttonClass} h-12 sm:min-w-32`} type="submit">
           {commonText.scan}
         </button>
       </div>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { buttonClass, dangerButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 
 type SettingsOverview = {
@@ -577,7 +577,7 @@ export default function SettingsPage() {
                               {template.priority}
                             </div>
                             <button
-                              className="mt-2 text-danger disabled:text-muted"
+                              className={`${dangerButtonClass} mt-3`}
                               disabled={!template.active}
                               type="button"
                               onClick={() => deactivateRule("WORK_TEMPLATE", template.id)}
@@ -703,7 +703,7 @@ export default function SettingsPage() {
                               {directive.priority}
                             </div>
                             <button
-                              className="mt-2 text-danger disabled:text-muted"
+                              className={`${dangerButtonClass} mt-3`}
                               disabled={!directive.active}
                               type="button"
                               onClick={() => deactivateRule("LOCATION_DIRECTIVE", directive.id)}

@@ -39,8 +39,8 @@ export function ScanField({
   }
 
   return (
-    <form onSubmit={submit} className="rounded-md border border-border bg-surface p-3">
-      <label htmlFor={inputId} className="mb-1 block text-sm font-semibold text-ink">
+    <form onSubmit={submit} className="rounded-lg border border-border bg-surface p-4">
+      <label htmlFor={inputId} className="mb-2 block text-sm font-semibold text-ink">
         {label}
       </label>
       <div id={hintId} className="sr-only">
@@ -50,7 +50,7 @@ export function ScanField({
         <input
           id={inputId}
           ref={inputRef}
-          className={`${inputClass} h-11 text-base`}
+          className={`${inputClass} h-12 text-base`}
           value={value}
           onChange={(event) => setValue(event.target.value)}
           placeholder={placeholder}
@@ -63,7 +63,7 @@ export function ScanField({
           spellCheck={false}
           type="text"
         />
-        <button className={`${buttonClass} h-11 sm:min-w-32`} type="submit">
+        <button className={`${buttonClass} h-12 sm:min-w-32`} type="submit">
           {commonText.scan}
         </button>
       </div>

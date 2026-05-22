@@ -1131,3 +1131,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - UX review: managers can mark remaining quantity as `Недосбор` from the picking screen; workers still use the same scan-confirm flow. The UI remains Russian, but role-aware hiding for the manager-only short-pick button is still not implemented client-side.
 - Architecture review: short-pick resolution releases only the remaining reserved quantity through `StockMovementService`, keeps `PICK` movements append-only, marks the reservation `SHORT`, and leaves the order in `SHORT_PICKED` instead of allowing packing.
 - Remaining risk: no dedicated manager exception queue, no backorder/cancel/reallocate resolution, no browser/mobile E2E, and no route-level permission test for short-pick resolution.
+
+#### Phase 33: UI Design System And Shared Primitive Hardening
+
+- Status: partially implemented; active-page visual QA remains required before UI can be called complete.
+- What changed: added `docs/wms-ui-design-system.md` and `docs/wms-ui-audit.md`, hardened shared form controls, native select styling, button variants, status badges, page headers, empty states, notice banners, scanner panels, workflow hubs, sidebar/mobile navigation, active nav state, and global WMS table styling.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, and `pnpm build` passed.
+- UX review: the shared layer now targets a calm Russian SaaS UI instead of browser-default scaffold controls. Selects have padding and custom arrows, statuses are centrally mapped, and worker scan panels have clearer hierarchy.
+- Architecture review: UI-only changes; stock rules, transactions, ledger append-only behavior, permissions, and tenant isolation are unchanged.
+- Remaining risk: not every page has been individually redesigned yet. Some screens still contain page-local loading/error blocks and dense admin sections. Browser/mobile visual smoke coverage remains missing.

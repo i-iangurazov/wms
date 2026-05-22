@@ -39,3 +39,50 @@ textarea {
 .focus-ring:focus-visible {
   outline-color: #0f766e;
 }
+
+@layer components {
+  .wms-root .wms-control {
+    min-height: 2.5rem;
+  }
+
+  .wms-root select.wms-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%235b6472' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 0.8rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+    padding-right: 2.65rem;
+  }
+
+  .wms-root table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+
+  .wms-root thead {
+    background: #f8fafc;
+    color: #5b6472;
+  }
+
+  .wms-root th {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .wms-root td {
+    padding: 0.9rem 1rem;
+    vertical-align: middle;
+  }
+
+  .wms-root tbody tr {
+    border-top: 1px solid #d8dee9;
+  }
+
+  .wms-root tbody tr:hover {
+    background: #f8fafc;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { EmptyState } from "@/components/EmptyState";
-import { buttonClass, Field, inputClass, secondaryButtonClass } from "@/components/FormControls";
+import { buttonClass, dangerButtonClass, Field, ghostButtonClass, inputClass, secondaryButtonClass } from "@/components/FormControls";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { commonText, emptyStates, labelFor, locationTypeLabels } from "@/lib/wmsText";
@@ -448,11 +448,11 @@ export default function LocationsPage() {
                     <StatusBadge value={location.status} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="mr-3 text-accent" type="button" onClick={() => startEdit(location)}>
+                    <button className={ghostButtonClass} type="button" onClick={() => startEdit(location)}>
                       {commonText.edit}
                     </button>
                     <button
-                      className="text-danger disabled:text-muted"
+                      className={dangerButtonClass}
                       disabled={location.status === "INACTIVE"}
                       type="button"
                       onClick={() => void deactivateLocation(location.id)}

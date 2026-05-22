@@ -13,7 +13,7 @@ export function NoticeBanner({ kind, message }: { kind: NoticeKind; message: str
 
   return (
     <div
-      className={`mb-4 rounded-md border p-3 text-sm ${classes[kind]}`}
+      className={`mb-4 rounded-lg border px-4 py-3 text-sm font-medium shadow-sm ${classes[kind]}`}
       role={kind === "error" ? "alert" : "status"}
       aria-live={kind === "error" ? "assertive" : "polite"}
     >
