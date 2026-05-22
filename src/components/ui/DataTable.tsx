@@ -47,7 +47,7 @@ export function DataTable<TData>({
   return (
     <TableWrap className={className}>
       <Table>
-        <thead className="bg-surface text-xs font-semibold uppercase text-muted">
+        <thead className="hidden bg-surface text-xs font-semibold uppercase text-muted md:table-header-group">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
@@ -69,16 +69,25 @@ export function DataTable<TData>({
         </thead>
         <tbody className="divide-y divide-border">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="bg-panel transition hover:bg-surface/70">
+            <tr key={row.id} className="block bg-panel p-3 transition hover:bg-surface/70 md:table-row md:p-0">
               {row.getVisibleCells().map((cell) => {
                 const meta = cell.column.columnDef.meta;
                 const align = meta?.align ?? "left";
+                const headerLabel =
+                  typeof cell.column.columnDef.header === "string"
+                    ? cell.column.columnDef.header
+                    : cell.column.id;
                 return (
                   <td
                     key={cell.id}
-                    className={`px-4 py-4 align-top text-ink ${alignClass[align]} ${meta?.cellClassName ?? ""}`}
+                    className={`flex items-start justify-between gap-4 px-1 py-2 align-top text-ink md:table-cell md:px-4 md:py-4 ${alignClass[align]} ${meta?.cellClassName ?? ""}`}
                   >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    <span className="max-w-28 shrink-0 text-left text-xs font-semibold uppercase text-muted md:hidden">
+                      {headerLabel}
+                    </span>
+                    <div className={align === "right" ? "min-w-0 text-right" : "min-w-0"}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
                   </td>
                 );
               })}

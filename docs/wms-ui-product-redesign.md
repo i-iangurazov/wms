@@ -159,7 +159,8 @@ Plan:
 - Keep column alignment, responsive overflow, min widths, readable row height, and restrained hover state consistent.
 - Keep empty states outside the table with the shared `EmptyState`.
 - Avoid cramped row action buttons; use dropdown menus where appropriate.
-- Next: add mobile card fallbacks for dense receiving/cycle count line tables.
+- On small screens, render labeled stacked rows instead of forcing desktop columns.
+- Next: add dedicated mobile worker cards for dense receiving/cycle count line tables.
 
 Current status: active WMS pages no longer render page-local raw `<table>` markup. The only table markup lives inside `src/components/ui/Table.tsx` and is consumed through `DataTable`.
 

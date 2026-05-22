@@ -55,7 +55,7 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 | Select arrow and padding | Native WMS selects were raw/cramped. | Shared Radix Select plus styled native fallback. | P0 | IMPLEMENTED |
 | Empty circles | Empty-state decoration looked meaningless. | Icon-based empty states with action support. | P0 | IMPLEMENTED |
 | Raw inline error/loading blocks | Inconsistent color/radius/spacing. | Add `LoadingState`, `ErrorState`; gradually replace. | P1 | IMPLEMENTED |
-| Tables | Active pages previously repeated raw `<table>` markup. | Shared TanStack-backed `DataTable` with consistent spacing, alignment, overflow, and hover state. | P0 | IMPLEMENTED |
+| Tables | Active pages previously repeated raw `<table>` markup and small screens inherited cramped desktop columns. | Shared TanStack-backed `DataTable` with consistent spacing, alignment, overflow, hover state, and stacked labeled mobile rows. | P0 | IMPLEMENTED |
 | Badges | Binary status color is misleading. | Central visual status map. | P0 | IMPLEMENTED |
 | Text buttons | Edit/deactivate actions are inconsistent. | Use ghost/danger button classes. | P1 | PARTIAL |
 | Mobile scanner UI | Functional but not visually strong enough. | Improve scanner components first. | P0 | PARTIAL |
@@ -132,3 +132,10 @@ The UI foundation is improving but is not complete. The repo now has product-gra
 - Acceptance: busy manager/admin tables should not show cramped edit/deactivate/delete button groups inline.
 - Progress: added `src/components/ui/ActionMenu.tsx`, expanded Radix dropdown item disabled state, and migrated warehouse, location, product, product variant, and settings user-access row actions to the shared menu.
 - Remaining gap: operational worker actions are intentionally still explicit buttons; future pass should evaluate movement exceptions, replenishment rules, and settings rule cards for action-menu fit.
+
+### UI Phase 12: Responsive DataTable Rows
+
+- Status: IMPLEMENTED.
+- Acceptance: shared data tables should not force desktop-style columns on mobile/scanner screens.
+- Progress: `DataTable` now hides the desktop header on small screens and renders each row as labeled stacked fields with readable spacing, while keeping normal table layout from `md` upward.
+- Remaining gap: receiving and cycle-count still need dedicated worker card components for inline quantity workflows; responsive rows reduce visual breakage but do not replace scanner-first task UX.

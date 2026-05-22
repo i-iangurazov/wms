@@ -1230,3 +1230,12 @@ The phases below are intentionally small. Split any phase further if implementat
 - Architecture review: UI-only change; no stock, auth, permission, tenant-isolation, or ledger behavior changed.
 - Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
 - Remaining risk: some operational pages intentionally keep explicit action buttons because workers need direct next actions. Future passes should add menus only where they reduce clutter without hiding the primary warehouse task.
+
+#### Phase 44: Responsive DataTable Rows
+
+- Status: implemented and validated at shared component level.
+- What changed: updated `DataTable` so desktop tables become labeled stacked rows on small screens. This improves stock, movement, audit, product, warehouse, location, receiving, cycle-count, reconciliation, and settings tables without duplicating mobile markup in every page.
+- UX review: mobile/scanner users no longer have to interpret compressed desktop table headers on the shared data surfaces. Dense quantity workflows still need purpose-built worker cards and sticky actions.
+- Architecture review: UI-only change; no stock, auth, permission, tenant-isolation, or ledger behavior changed.
+- Validation: `git diff --check`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:db`, `pnpm build`, `pnpm ui:smoke`, and sequential `pnpm test:e2e` passed.
+- Remaining risk: responsive stacked rows are a foundation, not a complete scanner workflow redesign.
